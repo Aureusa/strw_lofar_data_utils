@@ -3,12 +3,14 @@ from tqdm import tqdm
 from ..core.cutout_maker import make_cutout, find_mosaic
 from ..core.mosaic import get_list_of_mosaics
 
+
 def generate_cutouts(
         ra_dec_list: list[tuple[float, float]],
         size_arcmin: float = None,
         size_pixels: int = None,
         data_folder: str = None,
-        save: bool = False
+        save: bool = False,
+        mosaic_coverage_file: str = 'default'
     ) -> list:
     """
     Generate cutouts for a list of RA and Dec positions.
@@ -18,10 +20,13 @@ def generate_cutouts(
     :param size_pixels: Size of the cutout in pixels (optional)
     :param data_folder: Folder to save cutouts if save is True
     :param save: Whether to save the cutouts to disk
+    :param mosaic_coverage_file: Path to the mosaic coverage CSV file. If 'default'
+    uses the coverage file in the `/path/to/repo/data/mosaic_coverage/lotss_dr2_mosaic_coverage.csv`.
+    In general I don't see a reason to change this.
     :return: List of Cutout objects
     """
     cutouts = []
-    mosaics = get_list_of_mosaics()
+    mosaics = get_list_of_mosaics(mosaic_coverage_file)
 
     for ra, dec in tqdm(ra_dec_list, desc="Generating cutouts"):
         mosaic = find_mosaic(ra, dec, mosaics)
