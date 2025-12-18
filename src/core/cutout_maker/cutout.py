@@ -64,6 +64,11 @@ class Cutout:
         cutout_header = cutout.wcs.to_header()
 
         filename = self._generate_filename() if filename is None else filename
+
+        # Make sure output path exists
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+            
         output_path = os.path.join(output_path, filename)
         
         # Save to FITS
