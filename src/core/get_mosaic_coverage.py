@@ -4,6 +4,15 @@ import argparse
 import pandas as pd
 import yaml
 from tqdm import tqdm
+import dotenv
+
+dotenv.load_dotenv()
+
+# Get environment variables
+BASE_DIR = os.getenv("BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
+RA0h_field = os.getenv("RA0h_field", "RA0h_field")
+RA13h_field = os.getenv("RA13h_field", "RA13h_field")
+FIELD_LIST = [RA0h_field, RA13h_field]
 
 
 def load_config(config_path: str) -> dict:
@@ -18,7 +27,7 @@ def load_config(config_path: str) -> dict:
     
 
 def print_config_summary(
-        config: dict, save_csv: bool, save_path: str, verbose: bool
+        base_dir: str, field_list: list, save_csv: bool, save_path: str, verbose: bool
     ) -> None:
     """
     Print a summary of the configuration settings.
@@ -29,8 +38,8 @@ def print_config_summary(
     :param verbose: Whether to print verbose output
     """
     print("Configuration Summary:")
-    print(f"Base Directory: {config['base_dir']}")
-    print(f"Fields: {config['fields']}")
+    print(f"Base Directory: {base_dir}")
+    print(f"Fields: {field_list}")
     print(f"Save CSV: {save_csv}")
     print(f"CSV Save Path: {save_path}")
     print(f"Verbose: {verbose}")
@@ -128,12 +137,6 @@ if __name__ == "__main__":
         description="LOFAR Mosaic Coverage Extraction"
     )
     parser.add_argument(
-        "--config",
-        type=str,
-        required=True,
-        help="Path to YAML configuration file containing base_dir and fields"
-    )
-    parser.add_argument(
         "--no-save-csv",
         action='store_false',
         dest='save_csv',
@@ -159,20 +162,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Load configuration
-    config = load_config(args.config)
     save_csv = args.save_csv
     save_path = args.save_path
     verbose = args.verbose
 
-    # Set base directory and field list
-    base_dir = config['base_dir']
-    field_list = config['fields']
-
-    print_config_summary(config, save_csv, save_path, verbose)
+    print_config_summary(BASE_DIR, FIELD_LIST, save_csv, save_path, verbose)
 
     main(
-        base_dir,
-        field_list,
+        BASE_DIR,
+        FIELD_LIST,
         save_csv=save_csv,
         save_path=save_path,
         verbose=verbose

@@ -1,7 +1,0 @@
-# Base directory for LOFAR DR2 mosaics on the STRW cluster
-base_dir: "/disks/paradata/shimwell/LoTSS-DR2/mosaics"
-
-# List of RA fields
-fields:
-  - "RA0h_field"
-  - "RA13h_field"
