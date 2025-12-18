@@ -1,7 +1,7 @@
 from ..mosaic import Mosaic
 from .cutout import Cutout
 
-def make_cutout(mosaic: Mosaic, ra: float, dec: float, size_arcmin: float | None = None, size_pixels: int | None = None):
+def make_cutout(mosaic: Mosaic, ra: float, dec: float, size_arcmin: float = None, size_pixels: int = None):
     """
     Create a Cutout object for the given mosaic at specified RA, Dec.
 

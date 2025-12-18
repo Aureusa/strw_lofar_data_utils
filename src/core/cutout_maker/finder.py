@@ -1,7 +1,7 @@
 from ..mosaic import Mosaic
 
 
-def find_mosaic(ra: float, dec: float, list_of_mosaics: list[Mosaic]) -> Mosaic | None:
+def find_mosaic(ra: float, dec: float, list_of_mosaics: list[Mosaic]) -> Mosaic:
     """
     Find the mosaic that covers the given RA and Dec.
 

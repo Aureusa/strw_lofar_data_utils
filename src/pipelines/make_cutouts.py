@@ -5,9 +5,9 @@ from ..core.mosaic import get_list_of_mosaics
 
 def generate_cutouts(
         ra_dec_list: list[tuple[float, float]],
-        size_arcmin: float | None = None,
-        size_pixels: int | None = None,
-        data_folder: str | None = None,
+        size_arcmin: float = None,
+        size_pixels: int = None,
+        data_folder: str = None,
         save: bool = False
     ) -> list:
     """
@@ -16,6 +16,8 @@ def generate_cutouts(
     :param ra_dec_list: List of tuples containing (RA, Dec) in degrees
     :param size_arcmin: Size of the cutout in arcminutes (optional)
     :param size_pixels: Size of the cutout in pixels (optional)
+    :param data_folder: Folder to save cutouts if save is True
+    :param save: Whether to save the cutouts to disk
     :return: List of Cutout objects
     """
     cutouts = []
