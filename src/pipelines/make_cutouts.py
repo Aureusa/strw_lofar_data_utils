@@ -1,6 +1,6 @@
 from tqdm import tqdm
 
-from ..core.cutout_maker import make_cutout, find_mosaic
+from ..core.cutout_maker import make_cutout, find_mosaic, make_value_added_cutout
 from ..core.mosaic import get_list_of_mosaics
 
 
@@ -10,7 +10,8 @@ def generate_cutouts(
         size_pixels: int = None,
         data_folder: str = None,
         save: bool = False,
-        mosaic_coverage_file: str = 'default'
+        mosaic_coverage_file: str = 'default',
+        value_added: bool = False,
     ) -> list:
     """
     Generate cutouts for a list of RA and Dec positions.
@@ -31,7 +32,22 @@ def generate_cutouts(
     for ra, dec in tqdm(ra_dec_list, desc="Generating cutouts"):
         mosaic = find_mosaic(ra, dec, mosaics)
         if mosaic is not None:
-            cutout = make_cutout(mosaic, ra, dec, size_arcmin=size_arcmin, size_pixels=size_pixels)
+            if value_added:
+                cutout = make_value_added_cutout(
+                    mosaic,
+                    ra,
+                    dec,
+                    size_arcmin=size_arcmin,
+                    size_pixels=size_pixels,
+                )
+            else:
+                cutout = make_cutout(
+                    mosaic,
+                    ra,
+                    dec,
+                    size_arcmin=size_arcmin,
+                    size_pixels=size_pixels,
+                )
 
             if save:
                 cutout.save_cutout(output_path=data_folder)
