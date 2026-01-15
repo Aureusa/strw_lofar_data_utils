@@ -44,6 +44,18 @@ class Cutout:
 
         self._cutout = None
 
+    def get_data(self) -> np.ndarray:
+        """
+        Get the cutout data as a 2D numpy array.
+        """
+        return self.cutout.data
+
+    def get_header(self) -> fits.Header:
+        """
+        Get the cutout header as a FITS header.
+        """
+        return self.mosaic.load_header()
+
     @property
     def cutout(self) -> Cutout2D:
         """

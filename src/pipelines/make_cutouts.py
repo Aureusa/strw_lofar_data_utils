@@ -1,7 +1,41 @@
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
 from tqdm import tqdm
 
 from ..core.cutout_maker import make_cutout, find_mosaic, make_value_added_cutout
 from ..core.mosaic import get_list_of_mosaics
+
+
+def _process_single_cutout(ra_dec, mosaics, size_arcmin, size_pixels, data_folder, save, value_added):
+    """Helper function to process a single cutout (for parallel execution)."""
+    ra, dec = ra_dec
+    mosaic = find_mosaic(ra, dec, mosaics)
+    
+    if mosaic is None:
+        return None, f"No mosaic found covering RA: {ra}, Dec: {dec}"
+    
+    if value_added:
+        cutout = make_value_added_cutout(
+            mosaic,
+            ra,
+            dec,
+            size_arcmin=size_arcmin,
+            size_pixels=size_pixels,
+        )
+    else:
+        cutout = make_cutout(
+            mosaic,
+            ra,
+            dec,
+            size_arcmin=size_arcmin,
+            size_pixels=size_pixels,
+        )
+    
+    if save:
+        cutout.save_cutout(output_path=data_folder)
+        cutout.offload_data()
+    
+    return cutout, None
 
 
 def generate_cutouts(
@@ -12,6 +46,7 @@ def generate_cutouts(
         save: bool = False,
         mosaic_coverage_file: str = 'default',
         value_added: bool = False,
+        n_workers: int = None,
     ) -> list:
     """
     Generate cutouts for a list of RA and Dec positions.
@@ -24,37 +59,33 @@ def generate_cutouts(
     :param mosaic_coverage_file: Path to the mosaic coverage CSV file. If 'default'
     uses the coverage file in the `/path/to/repo/data/mosaic_coverage/lotss_dr2_mosaic_coverage.csv`.
     In general I don't see a reason to change this.
+    :param value_added: Whether to create value-added cutouts
+    :param n_workers: Number of parallel workers (None = use all CPUs)
     :return: List of Cutout objects
     """
     cutouts = []
     mosaics = get_list_of_mosaics(mosaic_coverage_file)
-
-    for ra, dec in tqdm(ra_dec_list, desc="Generating cutouts"):
-        mosaic = find_mosaic(ra, dec, mosaics)
-        if mosaic is not None:
-            if value_added:
-                cutout = make_value_added_cutout(
-                    mosaic,
-                    ra,
-                    dec,
-                    size_arcmin=size_arcmin,
-                    size_pixels=size_pixels,
-                )
-            else:
-                cutout = make_cutout(
-                    mosaic,
-                    ra,
-                    dec,
-                    size_arcmin=size_arcmin,
-                    size_pixels=size_pixels,
-                )
-
-            if save:
-                cutout.save_cutout(output_path=data_folder)
-                cutout.offload_data()
-
-            cutouts.append(cutout)
-        else:
-            print(f"No mosaic found covering RA: {ra}, Dec: {dec}")
-
+    
+    # Create partial function with fixed parameters
+    process_func = partial(
+        _process_single_cutout,
+        mosaics=mosaics,
+        size_arcmin=size_arcmin,
+        size_pixels=size_pixels,
+        data_folder=data_folder,
+        save=save,
+        value_added=value_added,
+    )
+    
+    # Parallel processing
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        futures = {executor.submit(process_func, ra_dec): ra_dec for ra_dec in ra_dec_list}
+        
+        for future in tqdm(as_completed(futures), total=len(ra_dec_list), desc="Generating cutouts"):
+            cutout, error = future.result()
+            if error:
+                print(error)
+            elif cutout is not None:
+                cutouts.append(cutout)
+    
     return cutouts
