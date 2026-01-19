@@ -5,6 +5,7 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.io import fits
 from astropy.nddata import Cutout2D
+from astropy.wcs import WCS
 from astropy.visualization import (AsinhStretch, ImageNormalize, PercentileInterval)
 import dotenv
 import numpy as np
@@ -55,6 +56,12 @@ class Cutout:
         Get the cutout header as a FITS header.
         """
         return self.mosaic.load_header()
+    
+    def get_wcs(self) -> WCS:
+        """
+        Get the cutout WCS object.
+        """
+        return self.cutout.wcs
 
     @property
     def cutout(self) -> Cutout2D:
@@ -150,7 +157,12 @@ class Cutout:
         # Create cutout
         position = SkyCoord(ra=self.ra*u.deg, dec=self.dec*u.deg, frame='icrs')
     
-        self._cutout = Cutout2D(data, position, (self.size_pixels, self.size_pixels), wcs=wcs)
+        self._cutout = Cutout2D(
+            data,
+            position,
+            (self.size_pixels, self.size_pixels),
+            wcs=wcs
+        )
         return self._cutout
 
     def _make_contour_levels(self, levels: list) -> np.ndarray:
