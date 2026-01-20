@@ -45,6 +45,31 @@ class Cutout:
 
         self._cutout = None
 
+        # This flag indicates whether the cutout is valid (non-zero size)
+        # This is temporally fix since sometimes Cutout2D returns zero-size
+        # cutouts without raising an error - need to investigate further
+        # The pipeline should check this flag after creating the cutout
+        # and handle invalid cutouts appropriately. God forbit we have
+        # to deal with this in multiple places.
+        self.valid = self._check_valid_data_region()
+
+    def _check_valid_data_region(self) -> bool:
+        """
+        Check if cutout center is within the valid (non-NaN) circular region.
+        Uses angular separation without loading data.
+        """        
+        # Calculate angular separation between cutout center and mosaic center
+        cutout_coord = SkyCoord(ra=self.ra*u.deg, dec=self.dec*u.deg, frame='icrs')
+        mosaic_coord = SkyCoord(ra=self.mosaic.ra*u.deg, dec=self.mosaic.dec*u.deg, frame='icrs')
+        
+        separation = cutout_coord.separation(mosaic_coord).deg
+        
+        # Check if within valid radius (with some margin for cutout size)
+        cutout_half_size_deg = self.size_arcmin / 60 / 2  # Convert arcmin to degrees, then half
+        
+        # Cutout is valid if its center + half its size is within the valid radius
+        return (separation + cutout_half_size_deg) <= self.mosaic.valid_data_radius_deg
+
     def get_data(self) -> np.ndarray:
         """
         Get the cutout data as a 2D numpy array.

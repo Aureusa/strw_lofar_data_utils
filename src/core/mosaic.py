@@ -59,6 +59,10 @@ class Mosaic:
         self._field_path = self._find_field_path()
         self._mosaic_blanked_path = self._find_mosaic_blanked_path()
 
+        # Define the valid data region (non-NAN) which is a circle around the center
+        # with radius equal to half the smaller of ra_size and dec_size
+        self.valid_data_radius_deg = min(self.ra_size, self.dec_size) / 2
+
     @property
     def header(self):
         """

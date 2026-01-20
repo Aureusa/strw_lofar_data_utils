@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from tqdm import tqdm
 
@@ -30,10 +30,12 @@ def _process_single_cutout(ra_dec, mosaics, size_arcmin, size_pixels, data_folde
             size_arcmin=size_arcmin,
             size_pixels=size_pixels,
         )
+
+    if cutout.valid == False:
+        return None, f"Cutout at RA: {ra}, Dec: {dec} is outside valid data region."
     
     if save:
         cutout.save_cutout(output_path=data_folder)
-        cutout.offload_data()
     
     return cutout, None
 
@@ -78,7 +80,7 @@ def generate_cutouts(
     )
     
     # Parallel processing
-    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
         futures = {executor.submit(process_func, ra_dec): ra_dec for ra_dec in ra_dec_list}
         
         for future in tqdm(as_completed(futures), total=len(ra_dec_list), desc="Generating cutouts"):
