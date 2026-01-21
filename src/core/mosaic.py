@@ -4,7 +4,12 @@ import dotenv
 import gc
 
 from astropy.io import fits
+from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+import numpy as np
 import pandas as pd
+from .utils import pixel_2_arcmin_size, arcmin_2_pixel_size
 
 
 dotenv.load_dotenv()
@@ -81,6 +86,121 @@ class Mosaic:
         if self._data is None:
             print("Data not loaded. Call load_data() to load it first.")
         return self._data
+    
+    def find_empty_regions(
+            self,
+            pybdsf_catalog: pd.DataFrame,
+            ra_key: str,
+            dec_key: str,
+            size_arcmin: float = None,
+            size_pixels: int = None,
+            max_sources: int = 3,
+            grid_step_arcmin: float = None,
+            grid_step_pixels: int = None,
+            min_separation_arcmin: float = None
+        ) -> pd.DataFrame:
+        """
+        Find empty regions in the mosaic with few or no sources from the catalog.
+        
+        :param pybdsf_catalog: DataFrame containing the PyBDSF catalog
+        :param ra_key: Column name for RA in the catalog
+        :param dec_key: Column name for Dec in the catalog
+        :param size_arcmin: Size of the region to check in arcminutes
+        :param size_pixels: Size of the region to check in pixels
+        :param max_sources: Maximum number of sources allowed in an "empty" region (default: 0)
+        :param grid_step_arcmin: Step size for grid search in arcminutes (default: size_arcmin/2)
+        :param grid_step_pixels: Step size for grid search in pixels (default: size_pixels/2)
+        :param min_separation_arcmin: Minimum separation between empty regions (default: size_arcmin)
+        :return: DataFrame with columns: ra, dec, num_sources
+        """
+        from tqdm import tqdm
+        if size_arcmin is None and size_pixels is None:
+            raise ValueError("Either size_arcmin or size_pixels must be provided.")
+        if size_pixels is None:
+            size_pixels = arcmin_2_pixel_size(size_arcmin, self.header)
+        if size_arcmin is None:
+            size_arcmin = pixel_2_arcmin_size(size_pixels, self.header)
+        
+        # Set default grid step to half the region size
+        if grid_step_arcmin is None and grid_step_pixels is None:
+            grid_step_arcmin = size_arcmin / 2
+        if grid_step_pixels is None:
+            grid_step_pixels = arcmin_2_pixel_size(grid_step_arcmin, self.header)
+        if grid_step_arcmin is None:
+            grid_step_arcmin = pixel_2_arcmin_size(grid_step_pixels, self.header)
+        
+        # Set default minimum separation
+        if min_separation_arcmin is None:
+            min_separation_arcmin = size_arcmin
+
+        # Convert catalog to SkyCoord
+        catalog_coords = SkyCoord(
+            ra=pybdsf_catalog[ra_key].values * u.deg,
+            dec=pybdsf_catalog[dec_key].values * u.deg
+        )
+
+        # Create a WCS object for coordinate transformations
+        wcs = WCS(self.header)
+        
+        # Calculate search radius (half diagonal of the box)
+        search_radius_arcmin = size_arcmin * np.sqrt(2) / 2
+        search_radius = search_radius_arcmin * u.arcmin
+
+        # Create grid of test positions
+        ra_grid = np.arange(self.ra_min, self.ra_max, grid_step_arcmin / 60)
+        dec_grid = np.arange(self.dec_min, self.dec_max, grid_step_arcmin / 60)
+        
+        empty_regions = []
+        
+        for ra in tqdm(ra_grid, desc="Scanning RA-DEC grid"):
+            for dec in dec_grid:
+                # Check if the center is within valid data region
+                center = SkyCoord(ra=ra * u.deg, dec=dec * u.deg)
+                separation_from_mosaic_center = center.separation(
+                    SkyCoord(ra=self.ra * u.deg, dec=self.dec * u.deg)
+                )
+                
+                if separation_from_mosaic_center.deg > self.valid_data_radius_deg:
+                    continue
+                
+                # Find sources within the search radius
+                separations = center.separation(catalog_coords)
+                sources_in_region = np.sum(separations < search_radius)
+                
+                # If region is empty enough, add it to the list
+                if sources_in_region <= max_sources:
+                    empty_regions.append({
+                        'ra': ra,
+                        'dec': dec,
+                        'num_sources': sources_in_region
+                    })
+        
+        # Convert to DataFrame
+        empty_regions_df = pd.DataFrame(empty_regions)
+        
+        if len(empty_regions_df) == 0:
+            return empty_regions_df
+        
+        # Filter out regions that are too close to each other
+        # Keep the ones with fewer sources
+        empty_regions_df = empty_regions_df.sort_values('num_sources')
+        filtered_regions = []
+        
+        for _, row in tqdm(empty_regions_df.iterrows(), total=len(empty_regions_df), desc="Filtering close regions"):
+            current_coord = SkyCoord(ra=row['ra'] * u.deg, dec=row['dec'] * u.deg)
+            
+            # Check if this region is far enough from already selected regions
+            too_close = False
+            for selected in filtered_regions:
+                selected_coord = SkyCoord(ra=selected['ra'] * u.deg, dec=selected['dec'] * u.deg)
+                if current_coord.separation(selected_coord).arcmin < min_separation_arcmin:
+                    too_close = True
+                    break
+            
+            if not too_close:
+                filtered_regions.append(row.to_dict())
+        
+        return pd.DataFrame(filtered_regions)
 
     def is_in_coverage(self, ra: float, dec: float) -> bool:
         """

@@ -4,7 +4,7 @@ from astropy.io.fits.header import Header
 def pixel_2_arcmin_size(size_pixels: int, header: Header) -> float:
         """
         Calculate size in arcminutes from size in pixels.
-        
+
         :param size_pixels: Size in pixels
         :return: Size in arcminutes
         """

@@ -8,9 +8,11 @@ from ..utils import pixel_2_arcmin_size, arcmin_2_pixel_size
 
 
 class AstroObject:
-    def __init__(self, ra: list[float], dec: list[float]):
+    def __init__(self, ra: list[float], dec: list[float], metadata: dict = {}) -> None:
         self.ra = [r * u.deg for r in ra]
         self.dec = [d * u.deg for d in dec]
+
+        self.metadata = metadata
 
         self.x_pos = None
         self.y_pos = None

@@ -49,6 +49,7 @@ def generate_cutouts(
         mosaic_coverage_file: str = 'default',
         value_added: bool = False,
         n_workers: int = None,
+        verbose: bool = False
     ) -> list:
     """
     Generate cutouts for a list of RA and Dec positions.
@@ -86,7 +87,8 @@ def generate_cutouts(
         for future in tqdm(as_completed(futures), total=len(ra_dec_list), desc="Generating cutouts"):
             cutout, error = future.result()
             if error:
-                print(error)
+                if verbose:
+                    print(error)
             elif cutout is not None:
                 cutouts.append(cutout)
     
