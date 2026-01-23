@@ -2,14 +2,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from tqdm import tqdm
 
-from ..core.cutout_maker import make_cutout, find_mosaic, make_value_added_cutout
+from ..core.cutout_maker import make_cutout, find_candidate_mosaics, make_value_added_cutout, chose_from_candidate_mosaics
 from ..core.mosaic import get_list_of_mosaics
 
 
 def _process_single_cutout(ra_dec, mosaics, size_arcmin, size_pixels, data_folder, save, value_added):
     """Helper function to process a single cutout (for parallel execution)."""
     ra, dec = ra_dec
-    mosaic = find_mosaic(ra, dec, mosaics)
+    candidate_mosaic = find_candidate_mosaics(ra, dec, mosaics)
+    mosaic = chose_from_candidate_mosaics(ra, dec, candidate_mosaic)
+
     
     if mosaic is None:
         return None, f"No mosaic found covering RA: {ra}, Dec: {dec}"

@@ -9,6 +9,7 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from .utils import pixel_2_arcmin_size, arcmin_2_pixel_size
 
 
@@ -62,7 +63,7 @@ class Mosaic:
 
         # Find the mosaic paths
         self._field_path = self._find_field_path()
-        self._mosaic_blanked_path = self._find_mosaic_blanked_path()
+        self._mosaic_blanked_path = self._find_candidate_mosaics_blanked_path()
 
         # Define the valid data region (non-NAN) which is a circle around the center
         # with radius equal to half the smaller of ra_size and dec_size
@@ -113,7 +114,6 @@ class Mosaic:
         :param min_separation_arcmin: Minimum separation between empty regions (default: size_arcmin)
         :return: DataFrame with columns: ra, dec, num_sources
         """
-        from tqdm import tqdm
         if size_arcmin is None and size_pixels is None:
             raise ValueError("Either size_arcmin or size_pixels must be provided.")
         if size_pixels is None:
@@ -201,6 +201,19 @@ class Mosaic:
                 filtered_regions.append(row.to_dict())
         
         return pd.DataFrame(filtered_regions)
+    
+    def find_seperation_from_center(self, ra: float, dec: float) -> float:
+        """
+        Find the angular separation from the mosaic center to the given RA and Dec.
+
+        :param ra: Right Ascension in degrees
+        :param dec: Declination in degrees
+        :return: Separation in degrees
+        """
+        center_coord = SkyCoord(ra=self.ra * u.deg, dec=self.dec * u.deg)
+        target_coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg)
+        separation = center_coord.separation(target_coord)
+        return separation.deg
 
     def is_in_coverage(self, ra: float, dec: float) -> bool:
         """
@@ -244,7 +257,7 @@ class Mosaic:
         self._header = None
         gc.collect()
 
-    def _find_mosaic_blanked_path(self):
+    def _find_candidate_mosaics_blanked_path(self):
         """
         Find the path to the blanked mosaic FITS file.
         Assumes a standard naming convention - 'mosaic-blanked.fits'.
@@ -257,6 +270,14 @@ class Mosaic:
             self.field_name,
             mosaic_blanked
         )
+    
+    def _get_center_coords(self) -> SkyCoord:
+        """
+        Get the SkyCoord of the mosaic center.
+
+        :return: SkyCoord of the mosaic center
+        """
+        return SkyCoord(ra=self.ra * u.deg, dec=self.dec * u.deg)
 
     def _find_field_path(self) -> str:
         """
