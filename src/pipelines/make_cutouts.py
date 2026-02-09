@@ -33,7 +33,7 @@ def _process_single_cutout(ra_dec, mosaics, size_arcmin, size_pixels, data_folde
             size_pixels=size_pixels,
         )
 
-    if cutout.valid == False:
+    if cutout is None:
         return None, f"Cutout at RA: {ra}, Dec: {dec} is outside valid data region."
     
     if save:
