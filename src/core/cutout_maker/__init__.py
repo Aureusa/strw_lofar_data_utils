@@ -1,3 +1,3 @@
 from .finder import find_candidate_mosaics, chose_from_candidate_mosaics
 from .cutout import Cutout
-from .make_cutout import make_cutout, make_value_added_cutout
+from .make_cutout import make_cutout
