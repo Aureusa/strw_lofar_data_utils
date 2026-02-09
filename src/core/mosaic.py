@@ -45,7 +45,7 @@ class Mosaic:
         :param ra_max: Maximum RA of the mosaic coverage in degrees
         :param dec_min: Minimum Dec of the mosaic coverage in degrees
         :param dec_max: Maximum Dec of the mosaic coverage in degrees
-        :param ra_size: Size of the mosaic in RA direction in degrees
+        :param ra_size: Size of the mosaic in RA direction in degrself.raees
         :param dec_size: Size of the mosaic in Dec direction in degrees
         """
         self.field_name = field_name
@@ -68,6 +68,15 @@ class Mosaic:
         # Define the valid data region (non-NAN) which is a circle around the center
         # with radius equal to half the smaller of ra_size and dec_size
         self.valid_data_radius_deg = min(self.ra_size, self.dec_size) / 2
+
+    @property
+    def wcs(self):
+        """
+        Get the WCS object for the mosaic.
+        """
+        if self._header is None:
+            self.load_header()
+        return WCS(self._header)
 
     @property
     def header(self):
@@ -224,6 +233,24 @@ class Mosaic:
         :return: True if within coverage, False otherwise
         """
         return (self.ra_min <= ra <= self.ra_max) and (self.dec_min <= dec <= self.dec_max)
+
+    def convert_pixels_to_world(self, x_pixel: list[float], y_pixel: list[float]) -> list[tuple[float, float]]:
+        """
+        Convert pixel coordinates to world coordinates (RA, Dec).
+
+        :param x_pixel: X pixel coordinate
+        :type x_pixel: list of floats
+        :param y_pixel: Y pixel coordinate
+        :type y_pixel: list of floats
+        :return: List of tuples of (RA, Dec) in degrees
+        """
+        wcs = WCS(self.header)
+
+        ra_dec_list = []
+        for x, y in zip(x_pixel, y_pixel):
+            ra_dec = wcs.wcs_pix2world(x, y, 0)
+            ra_dec_list.append((ra_dec[0], ra_dec[1]))
+        return ra_dec_list
     
     def load_header(self):
         """
@@ -248,6 +275,20 @@ class Mosaic:
             with fits.open(fits_path) as hdul:
                 self._data = hdul[0].data
         return self._data
+
+    def get_data_shape(self):
+        """
+        Get the shape of the FITS data for the mosaic without loading the entire data into memory.
+    
+        :return: Shape of the FITS data
+        """
+        if self._data is not None:
+            return self._data.shape
+        
+        fits_path = self._mosaic_blanked_path
+        with fits.open(fits_path) as hdul:
+            data_shape = hdul[0].data.shape
+        return data_shape
     
     def offload_data(self):
         """
@@ -334,4 +375,42 @@ def get_list_of_mosaics(mosaic_coverage_file: str = 'default') -> list[Mosaic]:
         )
         mosaics.append(mosaic)
     return mosaics
+
+
+def get_mosaic_by_field_name(field_name: str, mosaic_coverage_file: str = 'default') -> Mosaic:
+    """
+    Get a Mosaic object by its field name.
+
+    :param field_name: Name of the mosaic field
+    :param mosaic_coverage_file: Path to the mosaic coverage CSV file
+    :return: Mosaic object with the given field name
+    """
+    if mosaic_coverage_file == 'default':
+        mosaic_coverage_file = os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            '..',
+            'data',
+            'mosaic_coverage',
+            'lotss_dr2_mosaic_coverage.csv'
+        )
+    df = pd.read_csv(mosaic_coverage_file)
+
+    # Find the row with the given field name
+    row = df[df['field_name'] == field_name]
+    if row.empty:
+        raise ValueError(f"Mosaic with field name {field_name} not found in coverage file.")
+    row = row.iloc[0]
+    mosaic = Mosaic(
+        field_name=row['field_name'],
+        ra=row['ra'],
+        dec=row['dec'],
+        ra_min=row['ra_min'],
+        ra_max=row['ra_max'],
+        dec_min=row['dec_min'],
+        dec_max=row['dec_max'],
+        ra_size=row['ra_size'],
+        dec_size=row['dec_size']
+    )
+    return mosaic
     

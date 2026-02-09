@@ -15,7 +15,10 @@ def make_cutout(mosaic: Mosaic, ra: float, dec: float, size_arcmin: float = None
     :return: Cutout object
     """
     cutout = Cutout(mosaic, ra, dec, size_arcmin=size_arcmin, size_pixels=size_pixels)
-    return cutout
+    if cutout.valid:
+        return cutout
+    else:
+        return None
 
 def make_value_added_cutout(
     mosaic: Mosaic,
@@ -41,4 +44,7 @@ def make_value_added_cutout(
         size_arcmin=size_arcmin,
         size_pixels=size_pixels,
     )
-    return cutout
+    if cutout.valid:
+        return cutout
+    else:
+        return None
