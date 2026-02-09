@@ -3,11 +3,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from .cutout_maker.cutout import Cutout
+from .cutout_maker.cutout_catalogue import CutoutCatalogue
 from .mosaic_crawler.base_crawler import BaseMosaicCrawler
 
 
 class Vizualizer:
-    def vizualize_a_cutout(self, cutout: Cutout, title: str, contour_levels: list = None, cmap='inferno', colorbar=False, rms=0.1, save_path=None, save=False) -> None:
+    def vizualize_a_cutout(
+            self,
+            cutout: Cutout,
+            title: str,
+            contour_levels: list = None,
+            cmap='inferno',
+            colorbar=False,
+            rms=0.1,
+            save_path=None,
+            save=False
+        ) -> None:
         """
         Show the cutout using matplotlib.
 
@@ -39,6 +50,79 @@ class Vizualizer:
         if save:
             if save_path is None:
                 save_path = f"{title.replace(' ', '_')}_cutout.png"
+            plt.savefig(save_path)
+        else:
+            plt.show()
+        plt.close()
+
+    def vizualize_a_cutout_with_catalogue_objects(
+            self,
+            cutout: Cutout,
+            cutout_cat: CutoutCatalogue,
+            title: str,
+            contour_levels: list = [4, 6, 8, 10],
+            cmap='gray',
+            rms=0.1,
+            save_path=None,
+            save=False
+        ) -> None:
+        data_cutout = cutout.get_data()
+
+        # Creates a dict of AstroObject instances for each unique object in the cutout
+        ao_dict = cutout_cat.get_astro_objects_from_catalogue()
+
+        # For plotting purposes
+        norm = ImageNormalize(
+            data_cutout,
+            interval=PercentileInterval(99.5),
+            stretch=AsinhStretch()
+        )
+        if contour_levels is not None:
+            contours = self._make_contour_levels(contour_levels, rms=rms)
+        else:
+            contours = None
+
+        # Show the cutout
+        _, ax = plt.subplots(figsize=(10, 10))
+        ax.imshow(data_cutout, origin='lower', cmap=cmap, norm=norm)
+        ax.contour(
+            data_cutout,
+            levels=contours,
+            colors='black',
+            linewidths=0.5,
+            alpha=0.7
+        )
+
+        # Plot the positions of the objects within the cutout
+        # as circular markers with different colors for each object
+        colors = plt.cm.tab10(range(len(ao_dict)))
+        for idx, (obj_id, astro_obj) in enumerate(ao_dict.items()):
+            ao_pixel_loc = astro_obj.get_pixel_positions()
+            x_coords = [pos[0] for pos in ao_pixel_loc] # Extract x coordinates for plotting
+            y_coords = [pos[1] for pos in ao_pixel_loc] # Extract y coordinates for plotting
+            ax.scatter(
+                x_coords,
+                y_coords,
+                edgecolor=colors[idx],
+                facecolor='none',
+                s=5,
+                linewidths=2,
+                label=f"{idx} - {obj_id}"
+            )
+            for x, y in zip(x_coords, y_coords):
+                ax.text(
+                    x,
+                    y,
+                    str(idx),
+                    color=colors[idx],
+                    fontsize=24,
+                )
+
+        ax.legend()
+        ax.set_title("Cutout with Catalog Objects Overlay")
+        if save:
+            if save_path is None:
+                save_path = f"{title.replace(' ', '_')}_cutout_with_catalogue.png"
             plt.savefig(save_path)
         else:
             plt.show()

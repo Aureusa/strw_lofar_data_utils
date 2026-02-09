@@ -15,7 +15,7 @@ class CutoutCatalogue:
             ra_col: str = "RA",
             dec_col: str = "DEC",
             comp_col: str = "Component_Name",
-            source_col: str = "Source_Name",
+            source_col: str = "Parent_Source",
             ):
         """
         Initialize a CutoutCatalogue object that constrains a catalogue to objects within a cutout area.
@@ -32,7 +32,7 @@ class CutoutCatalogue:
         :type dec_col: str
         :param comp_col: Name of the Component Name column in the catalogue (default: "Component_Name")
         :type comp_col: str
-        :param source_col: Name of the Source Name column in the catalogue (default: "Source_Name")
+        :param source_col: Name of the Source Name column in the catalogue (default: "Parent_Source")
         :type source_col: str
         """
         # Make sure catalogue has required columns
