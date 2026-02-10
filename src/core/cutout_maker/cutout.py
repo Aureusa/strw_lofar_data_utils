@@ -6,17 +6,12 @@ import astropy.units as u
 from astropy.io import fits
 from astropy.nddata import Cutout2D
 from astropy.wcs import WCS
-from astropy.visualization import (AsinhStretch, ImageNormalize, PercentileInterval)
 import dotenv
 import numpy as np
-import matplotlib.pyplot as plt
+
 import gc
 
 from ..mosaic import Mosaic
-
-
-dotenv.load_dotenv()
-RMS = float(os.getenv("RMS", 0.1))  # mJy/beam
 
 
 class Cutout:
@@ -119,41 +114,6 @@ class Cutout:
         hdu = fits.PrimaryHDU(data=cutout.data, header=cutout_header)
         hdu.writeto(output_path, overwrite=True)
 
-    def show_cutout(self, title: str, contour_levels: list = None, cmap='inferno', colorbar=False, save_path=None, save=False) -> None:
-        """
-        Show the cutout using matplotlib.
-
-        :param title: Title for the plot
-        :param contour_levels: List of contour levels in multiples of RMS noise (e.g., [3, 5, 10])
-        :param cmap: Colormap for the image
-        :param colorbar: Whether to show a colorbar
-        :param save_path: Path to save the plot image (if save is True)
-        :param save: Whether to save the plot instead of showing it
-        """
-        cutout = self.cutout
-        data = cutout.data
-
-        contour_levels = self._make_contour_levels(contour_levels) if contour_levels is not None else None
-
-        norm = ImageNormalize(data, interval=PercentileInterval(99.5), stretch=AsinhStretch())
-        fig = plt.figure(figsize=(10, 10))
-        ax = plt.subplot(projection=cutout.wcs)
-        im = ax.imshow(data, cmap=cmap, origin='lower', norm=norm)
-        if colorbar:
-            plt.colorbar(im, ax=ax, label='Intensity')
-        if contour_levels is not None:
-            ax.contour(data, levels=contour_levels, colors='white', linewidths=0.5)
-        ax.set_title(title)
-        ax.set_xlabel('RA (J2000)')
-        ax.set_ylabel('Dec (J2000)')
-        if save:
-            if save_path is None:
-                save_path = f"{title.replace(' ', '_')}_cutout.png"
-            plt.savefig(save_path)
-        else:
-            plt.show()
-        plt.close()
-
     def offload_data(self) -> None:
         """
         Offload the cutout data to save memory.
@@ -189,15 +149,6 @@ class Cutout:
             wcs=wcs
         )
         return self._cutout
-
-    def _make_contour_levels(self, levels: list) -> np.ndarray:
-        """
-        Generates contour levels based on RMS noise.
-        
-        :param levels: List of contour levels in multiples of RMS noise
-        :return: List of contour levels in Jy/beam
-        """
-        return np.array(levels) * RMS * 1e-3  # Convert mJy/beam to Jy/beam
     
     def _generate_filename(self) -> str:
         """
