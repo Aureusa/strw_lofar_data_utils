@@ -60,7 +60,7 @@ class CutoutCatalogue:
             dec_col
         )
 
-    def get_astro_objects_from_catalogue(self) -> dict[str, AstroObject]:
+    def get_astro_objects_from_catalogue(self, unique_objects: bool = True) -> dict[str, AstroObject]:
         """
         Create AstroObject instances for each unique object in the constrained catalogue
         that fall within the cutout area. Returns a dictionary mapping source names
@@ -68,12 +68,19 @@ class CutoutCatalogue:
         area using the cutout WCS and shape and the check_if_in_cutout method of AstroObject.
         """
         # Get unique source names
-        unique_sources = self.constrained_catalogue[self.source_col].unique()
+        if unique_objects:
+            # We use only the sources (which can have multiple components)
+            target_column = self.source_col
+        else:
+            # We use the components (which can be multiple per source)
+            target_column = self.comp_col
+
+        unique_sources = self.constrained_catalogue[target_column].unique()
 
         # Create AstroObject instances for each unique source
         astro_objects = {}
         for source in unique_sources:
-            source_data = self.constrained_catalogue[self.constrained_catalogue[self.source_col] == source]
+            source_data = self.constrained_catalogue[self.constrained_catalogue[target_column] == source]
             ra_list = source_data[self.ra_col].tolist()
             dec_list = source_data[self.dec_col].tolist()
             ao = AstroObject(ra_list, dec_list)

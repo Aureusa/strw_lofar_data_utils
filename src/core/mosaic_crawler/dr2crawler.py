@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 from .base_crawler import BaseMosaicCrawler
 from ..mosaic import get_mosaic_by_field_name
-from ..cutout_maker import make_cutout
+from ..cutout_maker import make_cutout, Cutout
 
 
 class DR2Crawler(BaseMosaicCrawler):
@@ -12,6 +12,7 @@ class DR2Crawler(BaseMosaicCrawler):
             field_name: str,
             cutout_size: int,
             stride: float,
+            verbose: bool = False
         ):
         """
         Initialize the DR2Crawler with the given parameters.
@@ -44,9 +45,12 @@ class DR2Crawler(BaseMosaicCrawler):
             num_cutouts_x, num_cutouts_y, self._cutout_size, self.stride
         )
 
-        self._log_info()
+        self.verbose = verbose
 
-    def crawl(self):
+        if verbose:
+            self._log_info()
+
+    def crawl(self) -> list[Cutout]:
         """
         Crawl through the mosaic and generate cutouts based on the RA and Dec list.
         """
@@ -55,14 +59,18 @@ class DR2Crawler(BaseMosaicCrawler):
         new_y_list = []
 
         cutouts = []
-        for idx, (ra, dec) in enumerate(tqdm(self.ra_dec_list, desc="Generating cutouts")):
+        for idx, (ra, dec) in enumerate(
+            tqdm(self.ra_dec_list, desc="Generating cutouts") if self.verbose
+            else self.ra_dec_list
+            ):
             cutout = make_cutout(self.mosaic, ra, dec, size_pixels=self._cutout_size)
             if cutout is not None:
                 cutouts.append(cutout)
                 new_ra_dec_list.append((ra, dec))
                 new_x_list.append(self._x_list[idx])
                 new_y_list.append(self._y_list[idx])
-        print(f"Generated {len(cutouts)} cutouts out of a possible {self.total_cutouts} based on the RA and Dec list.")
+        if self.verbose:
+            print(f"Generated {len(cutouts)} cutouts out of {len(self.ra_dec_list)} possible positions.")
 
         self.ra_dec_list = new_ra_dec_list
         self._x_list = new_x_list
@@ -78,47 +86,6 @@ class DR2Crawler(BaseMosaicCrawler):
         :return: True if crawling is completed, False otherwise.
         """
         return hasattr(self, '_has_crawled') and self._has_crawled
-    
-    def visualize_the_crawl(self):
-        import matplotlib.pyplot as plt
-
-        mosaic_radius = self._mosaic_shape[0] / 2
-
-        fig, ax = plt.subplots(figsize=(8, 8))
-        ax.set_title(f"Crawl Visualization for Mosaic: {self.mosaic.field_name}")
-        ax.set_xlabel('X Pixel')
-        ax.set_ylabel('Y Pixel')
-
-        # Plot the mosaic coverage as a circle
-        circle = plt.Circle((mosaic_radius, mosaic_radius), mosaic_radius, color='lightgray', alpha=0.5)
-        ax.add_artist(circle)
-
-        # In the top left corner add a rectangle representing the cutout size
-        rect = plt.Rectangle(10, 10, self._cutout_size, self._cutout_size, edgecolor='red', facecolor='none', alpha=0.5)
-        ax.add_artist(rect)
-        ax.text(10, 10 + self._cutout_size + 20, f"Cutout Size: {self._cutout_size} pixels", color='red')
-
-        # Scatter the positions of the generated cutouts
-        x_array = np.array(self._x_list)
-        y_array = np.array(self._y_list)
-        ax.scatter(x_array, y_array, color='blue', s=10, label='Generated Cutouts Centers')
-
-        # Plot rectangles representing the cutout areas
-        for x, y in zip(x_array, y_array):
-            rect = plt.Rectangle(
-                (x - self._cutout_size / 2, y - self._cutout_size / 2),
-                self._cutout_size,
-                self._cutout_size,
-                edgecolor='red',
-                facecolor='none',
-                alpha=0.5
-            )
-            ax.add_artist(rect)
-        ax.legend()
-        plt.xlim(0, self._mosaic_shape[0])
-        plt.ylim(0, self._mosaic_shape[1])
-        plt.gca().set_aspect('equal', adjustable='box')
-        plt.show()
 
     def _log_info(self):
         print(f"Mosaic field name: {self.mosaic.field_name}")

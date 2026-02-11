@@ -69,7 +69,8 @@ class Cutout:
         """
         Get the cutout data as a 2D numpy array.
         """
-        return self.cutout.data
+        cutout = self.cutout
+        return cutout.data
 
     def get_header(self) -> fits.Header:
         """
@@ -81,7 +82,8 @@ class Cutout:
         """
         Get the cutout WCS object.
         """
-        return self.cutout.wcs
+        cutout = self.cutout
+        return cutout.wcs
 
     @property
     def cutout(self) -> Cutout2D:
@@ -132,12 +134,8 @@ class Cutout:
             return self._cutout
         
         # Load mosaic data and header
+        wcs = self.mosaic.wcs
         data = self.mosaic.load_data()
-        header = self.mosaic.load_header()
-        wcs = WCS(header)
-
-        # Offload the Mosaic data to save memory
-        self.mosaic.offload_data()
 
         # Create cutout
         position = SkyCoord(ra=self.ra*u.deg, dec=self.dec*u.deg, frame='icrs')
