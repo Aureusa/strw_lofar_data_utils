@@ -1,6 +1,6 @@
 from ..mosaic import Mosaic
 from .cutout import Cutout
-from .astro_object import AstroObject
+
 
 def make_cutout(mosaic: Mosaic, ra: float, dec: float, size_arcmin: float = None, size_pixels: int = None):
     """

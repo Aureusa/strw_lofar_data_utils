@@ -7,7 +7,7 @@ import pandas as pd
 from ..utils import pixel_2_arcmin_size, arcmin_2_pixel_size
 
 
-class AstroObject:
+class SourceBlob:
     def __init__(self, ra: list[float], dec: list[float], metadata: dict = {}) -> None:
         self.ra = [r * u.deg for r in ra]
         self.dec = [d * u.deg for d in dec]
@@ -58,7 +58,7 @@ def find_nearby_objects(
     catalogue_path: str,
     size_pixels: int = None,
     size_arcmin: float = None,
-    ) -> dict[str, AstroObject]:
+    ) -> dict[str, SourceBlob]:
     if size_pixels is None and size_arcmin is None:
         raise ValueError("Either size_pixels or size_arcmin must be provided.")
     
@@ -86,8 +86,8 @@ def find_nearby_objects(
     ]
 
     # Here we assume that the 'recno' column uniquely identifies each object and group by it
-    astro_objects = {}
+    source_blobs = {}
     for _, group in nearby_objects.groupby('recno'):
-        obj = AstroObject(ra=group['Component_RA'].tolist(), dec=group['Component_DEC'].tolist())
-        astro_objects[group['recno'].iloc[0]] = obj
-    return astro_objects
+        obj = SourceBlob(ra=group['Component_RA'].tolist(), dec=group['Component_DEC'].tolist())
+        source_blobs[group['recno'].iloc[0]] = obj
+    return source_blobs

@@ -2,8 +2,7 @@ from astropy.visualization import (AsinhStretch, ImageNormalize, PercentileInter
 import numpy as np
 import matplotlib.pyplot as plt
 
-from .cutout_maker.cutout import Cutout
-from .cutout_maker.cutout_catalogue import CutoutCatalogue
+from .cutout_maker import Cutout, CutoutCatalogue
 from .mosaic_crawler.base_crawler import BaseMosaicCrawler
 
 
@@ -68,8 +67,8 @@ class Vizualizer:
         ) -> None:
         data_cutout = cutout.get_data()
 
-        # Creates a dict of AstroObject instances for each unique object in the cutout
-        ao_dict = cutout_cat.get_astro_objects_from_catalogue()
+        # Creates a dict of SourceBlob instances for each unique object in the cutout
+        sb_dict = cutout_cat.get_source_blobs_from_catalogue()
 
         # For plotting purposes
         norm = ImageNormalize(
@@ -95,11 +94,11 @@ class Vizualizer:
 
         # Plot the positions of the objects within the cutout
         # as circular markers with different colors for each object
-        colors = plt.cm.tab10(range(len(ao_dict)))
-        for idx, (obj_id, astro_obj) in enumerate(ao_dict.items()):
-            ao_pixel_loc = astro_obj.get_pixel_positions()
-            x_coords = [pos[0] for pos in ao_pixel_loc] # Extract x coordinates for plotting
-            y_coords = [pos[1] for pos in ao_pixel_loc] # Extract y coordinates for plotting
+        colors = plt.cm.tab10(range(len(sb_dict)))
+        for idx, (obj_id, source_blob) in enumerate(sb_dict.items()):
+            sb_pixel_loc = source_blob.get_pixel_positions()
+            x_coords = [pos[0] for pos in sb_pixel_loc] # Extract x coordinates for plotting
+            y_coords = [pos[1] for pos in sb_pixel_loc] # Extract y coordinates for plotting
             ax.scatter(
                 x_coords,
                 y_coords,

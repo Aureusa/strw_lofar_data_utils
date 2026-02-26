@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "strw-lofar-data-utils"
+version = "1.0.0"
+description = "Utilities for LoTSS mosaics, cutout generation, and catalogue-driven workflows. This package is meant to be used as an internal tool on the Leiden Sterrenwacht Computer Cluster."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Petar Penchev" }
+]
+dependencies = [
+  "dotenv",
+  "tqdm",
+  "jupyter",
+  "pandas",
+  "numpy",
+  "astropy",
+  "matplotlib",
+  "ipykernel"
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["strw_lofar_data_utils*"]

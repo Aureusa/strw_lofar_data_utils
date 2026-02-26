@@ -3,7 +3,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import numpy as np
 
-from .astro_object import AstroObject
+from .source_blob import SourceBlob
 from .cutout import Cutout
 
 
@@ -30,15 +30,26 @@ class CutoutCatalogue:
         :type ra_col: str
         :param dec_col: Name of the Dec column in the catalogue (default: "DEC")
         :type dec_col: str
-        :param comp_col: Name of the Component Name column in the catalogue (default: "Component_Name")
+        :param comp_col: Name of the Component Name column in the catalogue (default: "Component_Name").
+        Optional - if your catalogue does not have a component column, set comp_col=None when initializing CutoutCatalogue.
         :type comp_col: str
-        :param source_col: Name of the Source Name column in the catalogue (default: "Parent_Source")
+        :param source_col: Name of the Source Name column in the catalogue (default: "Parent_Source"). This
+        column should be set to the name of the column in the PyBDSF-style catalogue that contains the
+        source names (which can have multiple components). This is used to group components into sources.
+        If your catalogue does not have a source column each component is treated as a separate source.
         :type source_col: str
         """
         # Make sure catalogue has required columns
-        for col in [ra_col, dec_col, comp_col, source_col]:
+        for col in [ra_col, dec_col, source_col]:
             if col not in catalogue.columns:
                 raise ValueError(f"Catalogue is missing required column: {col}")
+            
+        if comp_col is not None:
+            if comp_col not in catalogue.columns:
+                raise ValueError(
+                    f"Catalogue is missing component column: {comp_col}. "
+                    "If your catalogue does not have a component column, set comp_col=None when initializing CutoutCatalogue."
+                )
             
         # Store cutout properties
         self.cutout_shape = (cutout.size_pixels, cutout.size_pixels)
@@ -47,6 +58,7 @@ class CutoutCatalogue:
         self.ra_col = ra_col
         self.dec_col = dec_col
         self.comp_col = comp_col
+        
         # Constrain catalogue to objects within cutout area
         size_arcmin = cutout.size_arcmin
         cutout_ra = cutout.ra
@@ -60,12 +72,12 @@ class CutoutCatalogue:
             dec_col
         )
 
-    def get_astro_objects_from_catalogue(self, unique_objects: bool = True) -> dict[str, AstroObject]:
+    def get_source_blobs_from_catalogue(self, unique_objects: bool = True) -> dict[str, SourceBlob]:
         """
-        Create AstroObject instances for each unique object in the constrained catalogue
+        Create SourceBlob instances for each unique object in the constrained catalogue
         that fall within the cutout area. Returns a dictionary mapping source names
-        to AstroObject instances. This method checks if the objects are within the cutout
-        area using the cutout WCS and shape and the check_if_in_cutout method of AstroObject.
+        to SourceBlob instances. This method checks if the objects are within the cutout
+        area using the cutout WCS and shape and the check_if_in_cutout method of SourceBlob.
         """
         # Get unique source names
         if unique_objects:
@@ -77,30 +89,30 @@ class CutoutCatalogue:
 
         unique_sources = self.constrained_catalogue[target_column].unique()
 
-        # Create AstroObject instances for each unique source
-        astro_objects = {}
+        # Create SourceBlob instances for each unique source
+        source_blobs = {}
         for source in unique_sources:
             source_data = self.constrained_catalogue[self.constrained_catalogue[target_column] == source]
             ra_list = source_data[self.ra_col].tolist()
             dec_list = source_data[self.dec_col].tolist()
-            ao = AstroObject(ra_list, dec_list)
-            in_cutout = ao.check_if_in_cutout(self.cutout_wcs, self.cutout_shape)
+            sb = SourceBlob(ra_list, dec_list)
+            in_cutout = sb.check_if_in_cutout(self.cutout_wcs, self.cutout_shape)
             
             # If all are in cutout, add to dict
             if all(in_cutout):
-                astro_objects[source] = ao
+                source_blobs[source] = sb
             elif any(in_cutout):
-                # If some are in cutout, create new AstroObject with only those
+                # If some are in cutout, create new SourceBlob with only those
                 ra_in = [ra for ra, inside in zip(ra_list, in_cutout) if inside]
                 dec_in = [dec for dec, inside in zip(dec_list, in_cutout) if inside]
-                ao_in = AstroObject(ra_in, dec_in)
-                ao_in.check_if_in_cutout(self.cutout_wcs, self.cutout_shape)  # Should all be True now
-                astro_objects[source] = ao_in
+                sb_in = SourceBlob(ra_in, dec_in)
+                sb_in.check_if_in_cutout(self.cutout_wcs, self.cutout_shape)  # Should all be True now
+                source_blobs[source] = sb_in
             else:
                 # None are in cutout, skip
                 continue
 
-        return astro_objects
+        return source_blobs
     
     def get_constrained_catalogue(self) -> DataFrame:
         """

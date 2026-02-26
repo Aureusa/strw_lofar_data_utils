@@ -1,12 +1,9 @@
-import os
-
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.io import fits
 from astropy.nddata import Cutout2D
-from astropy.wcs import WCS
-import dotenv
+import os
 import numpy as np
 
 import gc
