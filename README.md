@@ -1,26 +1,26 @@
 ![Example LoTSS cutout](example_cutout.png)
 
-# STRW LOFAR Data Utils
+# 🌌 STRW LOFAR Data Utils
 
 This utility package was created out of necessity when no straightforward tools existed to generate cutouts from LoTSS (LOFAR Two-metre Sky Survey) DR2 data. It leverages the fact that most LoTSS DR2 mosaics are stored on the STRW cluster to provide fast and efficient cutout generation for any position within DR2 coverage.
 
 Built primarily for STRW/Leiden Observatory environments.
 
-## Features
+## ✨ Features
 
-- Generate cutouts from `(RA, Dec)` coordinates
-- Specify size in pixels or arcminutes
-- Batch processing via a single pipeline entrypoint
-- DR2 crawler support - tile-based cutout generation
-- Source catalog integration - identify which sources fall within cutouts and get their positions. Source catalog here refers to `PyBDSF`-style catalogs containing source/component positions and properties.
-- Cutout plotting and save-to-FITS helpers
+- 📍 Generate cutouts from `(RA, Dec)` coordinates
+- 📐 Specify size in pixels or arcminutes
+- ⚙️ Batch processing via a single pipeline entrypoint
+- 🧭 DR2 crawler support - tile-based cutout generation
+- 📚 Source catalog integration - identify which sources fall within cutouts and get their positions. Source catalog here refers to `PyBDSF`-style catalogs containing source/component positions and properties.
+- 🖼️ Cutout plotting and save-to-FITS helpers
 
-## Requirements
+## ✅ Requirements
 
 - Python 3.9+
 - Access to LoTSS DR2 mosaic files (cluster/local mirror)
 
-## Installation
+## 📦 Installation
 
 ### Option 1 (recommended for development): editable install
 
@@ -43,7 +43,7 @@ With editable install, code changes are picked up immediately (no reinstall need
 python -m pip install .
 ```
 
-## Import Paths (current)
+## 🧩 Import Paths (current)
 
 Use the real package path:
 
@@ -53,10 +53,10 @@ from strw_lofar_data_utils.core.mosaic_crawler import DR2Crawler
 from strw_lofar_data_utils.core.cutout_maker.cutout_catalogue import CutoutCatalogue
 ```
 
-## Usage
+## 🚀 Usage
 See the `examples/` directory for Jupyter notebooks demonstrating cutout generation, catalog integration, and visualization. All the main utilities in this package have been showcased in the notebooks with example code snippets and explanations.
 
-## Environment Configuration (for STRW users you can ignore this as the shipped files already contains the correct paths/settings for STRW use)
+## 🛠️ Environment Configuration (for STRW users you can ignore this as the shipped files already contains the correct paths/settings for STRW use)
 
 The code uses `.env` values for cluster-specific paths/settings. Typical values:
 
@@ -69,7 +69,7 @@ RMS="0.1"
 
 If you run outside STRW, set `BASE_DIR` and related values to your local data layout. `Highly discuraged to run outside STRW` as the code assumptions are highly coupled to the speicific STRW environment. This might be resolved in the future by adding more configuration options and decoupling from STRW-specific paths but for now this package is developed `exclusively for STRW use`.
 
-## First-Time Coverage File Generation (Not needed for STRW users as this is already done and the file is shipped with the package)
+## 🗺️ First-Time Coverage File Generation (Not needed for STRW users as this is already done and the file is shipped with the package)
 
 A precomputed coverage file is already shipped at:
 
@@ -82,7 +82,7 @@ cd scripts
 ./get_mosaic_coverage.sh
 ```
 
-## Project Layout
+## 🗂️ Project Layout
 
 ```text
 strw_lofar_data_utils/
@@ -99,6 +99,6 @@ strw_lofar_data_utils/
     └── pipelines/
 ```
 
-## License
+## 📄 License
 
 MIT. See [LICENSE](LICENSE).
