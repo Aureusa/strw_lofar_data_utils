@@ -47,6 +47,16 @@ class SourceBlob:
             self.y_pos = []
         self.x_pos.append(x)
         self.y_pos.append(y)
+
+    def set_precomputed_positions(self, x_positions: list[int], y_positions: list[int]) -> None:
+        """
+        Set precomputed pixel positions when caller already validated in-cutout coordinates.
+        This avoids recomputing world_to_pixel for the same points.
+        """
+        self.x_pos = [int(x) for x in x_positions]
+        self.y_pos = [int(y) for y in y_positions]
+        self._in_cutout = [True] * len(self.x_pos)
+        self._registered = True
         
     def get_pixel_positions(self) -> list[tuple[int, int]]:
         return list(zip(self.x_pos, self.y_pos))
