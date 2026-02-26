@@ -104,8 +104,11 @@ class DR2Crawler(BaseMosaicCrawler):
         i_grid, j_grid = np.meshgrid(i_indices, j_indices, indexing='ij')
         
         # Calculate x and y positions vectorized
-        x_list = (i_grid * cutout_size * stride).flatten()
-        y_list = (j_grid * cutout_size * stride).flatten()
+        x_arr = (i_grid * cutout_size * stride).flatten()
+        y_arr = (j_grid * cutout_size * stride).flatten()
+
+        x_list = x_arr.tolist()
+        y_list = y_arr.tolist()
 
         ra_dec_list = self.mosaic.convert_pixels_to_world(x_list, y_list)
         return ra_dec_list, x_list, y_list

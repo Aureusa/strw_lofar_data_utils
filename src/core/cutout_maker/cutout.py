@@ -32,8 +32,8 @@ class Cutout:
             raise ValueError("Either size_arcmin or size_pixels must be provided.")
         
         self.mosaic = mosaic
-        self.ra = ra
-        self.dec = dec
+        self.ra = float(ra)
+        self.dec = float(dec)
 
         self.size_arcmin = size_arcmin if size_arcmin is not None else self._calculate_size_arcmin(size_pixels)
         self.size_pixels = size_pixels if size_pixels is not None else self._calculate_size_pixels(size_arcmin)

@@ -74,7 +74,7 @@ def generate_cutouts(
     with ThreadPoolExecutor(max_workers=n_workers) as executor:
         futures = {executor.submit(process_func, ra_dec): ra_dec for ra_dec in ra_dec_list}
         
-        for future in tqdm(as_completed(futures), total=len(ra_dec_list), desc="Generating cutouts"):
+        for future in tqdm(as_completed(futures), total=len(ra_dec_list), desc="Generating cutouts") if verbose else as_completed(futures):
             cutout, error = future.result()
             if error:
                 if verbose:
