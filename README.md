@@ -1,3 +1,5 @@
+![Example LoTSS cutout](example_cutout.png)
+
 # STRW LOFAR Data Utils
 
 This utility package was created out of necessity when no straightforward tools existed to generate cutouts from LoTSS (LOFAR Two-metre Sky Survey) DR2 data. It leverages the fact that most LoTSS DR2 mosaics are stored on the STRW cluster to provide fast and efficient cutout generation for any position within DR2 coverage.
