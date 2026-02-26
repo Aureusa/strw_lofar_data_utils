@@ -246,11 +246,10 @@ class Mosaic:
         """
         wcs = WCS(self.header)
 
-        ra_dec_list = []
-        for x, y in zip(x_pixel, y_pixel):
-            ra_dec = wcs.wcs_pix2world(x, y, 0)
-            ra_dec_list.append((ra_dec[0], ra_dec[1]))
-        return ra_dec_list
+        x_array = np.asarray(x_pixel, dtype=np.float64)
+        y_array = np.asarray(y_pixel, dtype=np.float64)
+        ra_array, dec_array = wcs.wcs_pix2world(x_array, y_array, 0)
+        return list(zip(ra_array.tolist(), dec_array.tolist()))
     
     def load_header(self):
         """
