@@ -40,6 +40,7 @@ def generate_cutouts(
         data_folder: str = None,
         save: bool = False,
         mosaic_coverage_file: str = 'default',
+        release: str = 'DR2',
         n_workers: int = None,
         verbose: bool = False
     ) -> list:
@@ -54,11 +55,12 @@ def generate_cutouts(
     :param mosaic_coverage_file: Path to the mosaic coverage CSV file. If 'default'
     uses the coverage file in the `/path/to/repo/data/mosaic_coverage/lotss_dr2_mosaic_coverage.csv`.
     In general I don't see a reason to change this.
+    :param release: Data release to use ('DR2' or 'DR3')
     :param n_workers: Number of parallel workers (None = use all CPUs)
     :return: List of Cutout objects
     """
     cutouts = []
-    mosaics = get_list_of_mosaics(mosaic_coverage_file)
+    mosaics = get_list_of_mosaics(mosaic_coverage_file, release=release)
     
     # Create partial function with fixed parameters
     process_func = partial(

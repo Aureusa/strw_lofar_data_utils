@@ -6,16 +6,18 @@ from ..mosaic import get_mosaic_by_field_name
 from ..cutout_maker import make_cutout, Cutout
 
 
-class DR2Crawler(BaseMosaicCrawler):
+class Crawler(BaseMosaicCrawler):
     def __init__(
             self,
             field_name: str,
             cutout_size: int,
             stride: float,
+            mosaic_coverage_file: str = 'default',
+            release: str = 'DR2',
             verbose: bool = False
         ):
         """
-        Initialize the DR2Crawler with the given parameters.
+        Initialize the Crawler with the given parameters.
         
         :param field_name: Name of the mosaic field to crawl
         :type field_name: str
@@ -28,9 +30,16 @@ class DR2Crawler(BaseMosaicCrawler):
             stride=2: the cutouts will be generated with a gap of 100%
                 of the cutout size between them.
         :type stride: float
+        :param mosaic_coverage_file: Path to the mosaic coverage CSV file. If 'default'
+        uses the coverage file in the `/path/to/repo/data/mosaic_coverage/lotss_dr2_mosaic_coverage.csv`.
+        :type mosaic_coverage_file: str
+        :param release: Data release to use ('DR2' or 'DR3')
+        :type release: str
         """
         # Get the mosaic for the given field name and its shape
-        self.mosaic = get_mosaic_by_field_name(field_name)
+        self.mosaic = get_mosaic_by_field_name(
+            field_name, mosaic_coverage_file=mosaic_coverage_file, release=release
+        )
         self._mosaic_shape = self.mosaic.get_data_shape()
 
         self._cutout_size = cutout_size

@@ -1,1 +1,1 @@
-from .dr2crawler import DR2Crawler
+from .crawler import Crawler

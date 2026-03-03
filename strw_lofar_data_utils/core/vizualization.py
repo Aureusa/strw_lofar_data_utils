@@ -1,9 +1,12 @@
+from cmath import rect
+
 from astropy.visualization import (AsinhStretch, ImageNormalize, PercentileInterval)
 import numpy as np
 import matplotlib.pyplot as plt
 
 from .cutout_maker import Cutout, CutoutCatalogue
 from .mosaic_crawler.base_crawler import BaseMosaicCrawler
+from .mosaic import Mosaic
 
 
 class Vizualizer:
@@ -171,11 +174,43 @@ class Vizualizer:
         plt.gca().set_aspect('equal', adjustable='box')
         plt.show()
 
+    def vizualize_mosaic_coverage(self, mosaics: list[Mosaic]) -> None:
+        """
+        Visualize the coverage of multiple mosaics in RA/Dec space.
+        Each mosaic is represented as a circle centered on its RA/Dec with a radius corresponding to its size.
+        
+        :param mosaics: List of Mosaic objects to visualize
+        """
+        fig = plt.figure(figsize=(10, 10))
+        ax = fig.add_subplot(111, projection='aitoff')
+        ax.set_title("Mosaic Coverage in RA/Dec")
+        ax.set_xlabel('RA (degrees)')
+        ax.set_ylabel('Dec (degrees)')
+
+        for mosaic in mosaics:
+            ra_wrapped_deg = ((mosaic.ra + 180) % 360) - 180
+            ra_center_rad = np.radians(-ra_wrapped_deg)
+            dec_center_rad = np.radians(mosaic.dec)
+            ra_size_rad = np.radians(mosaic.ra_size)
+
+            # Plot the center of the mosaic
+            ax.scatter(ra_center_rad, dec_center_rad, marker='o', label=mosaic.field_name if len(mosaics) <= 10 else None)
+
+            # Plot the coverage area as a circular patch (approximating the rectangular coverage in RA/Dec)
+            circle = plt.Circle((ra_center_rad, dec_center_rad), ra_size_rad / 2, edgecolor='blue', facecolor='none', alpha=0.5)
+            ax.add_artist(circle)
+
+        if len(mosaics) <= 10:
+            ax.legend(loc='upper right')
+        plt.grid()
+        plt.show()
+
     def _make_contour_levels(self, levels: list, rms: float) -> np.ndarray:
         """
         Generates contour levels based on RMS noise.
         
         :param levels: List of contour levels in multiples of RMS noise
+        :param rms: RMS noise value in mJy/beam
         :return: List of contour levels in Jy/beam
         """
         return np.array(levels) * rms * 1e-3  # Convert mJy/beam to Jy/beam

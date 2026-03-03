@@ -9,7 +9,8 @@ import dotenv
 dotenv.load_dotenv()
 
 # Get environment variables
-BASE_DIR = os.getenv("BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
+DR2_BASE_DIR = os.getenv("DR2_BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
+DR3_BASE_DIR = os.getenv("DR3_BASE_DIR", "/disks/paradata/shimwell/Beyond-DR2/mosaics/LoTSS-DR3-mosaics/")
 RA0h_field = os.getenv("RA0h_field", "RA0h_field")
 RA13h_field = os.getenv("RA13h_field", "RA13h_field")
 FIELD_LIST = [RA0h_field, RA13h_field]
@@ -114,14 +115,19 @@ def main(
     """
     # Collect all mosaic info
     all_mosaics = []
-    for ra_field in field_list:
-        field_dir = os.path.join(base_dir, ra_field)
-        if os.path.exists(field_dir):
-            for pointing in tqdm(os.listdir(field_dir), desc=f"Processing {ra_field}") if verbose else os.listdir(field_dir):
-                mosaic_path = os.path.join(field_dir, pointing, "mosaic-blanked.fits")
-                if os.path.exists(mosaic_path):
-                    info = get_mosaic_coverage(mosaic_path)
-                    all_mosaics.append(info)
+    # for ra_field in field_list:
+    #     field_dir = os.path.join(base_dir, ra_field)
+    #     if os.path.exists(field_dir):
+    #         for pointing in tqdm(os.listdir(field_dir), desc=f"Processing {ra_field}") if verbose else os.listdir(field_dir):
+    #             mosaic_path = os.path.join(field_dir, pointing, "mosaic-blanked.fits")
+    #             if os.path.exists(mosaic_path):
+    #                 info = get_mosaic_coverage(mosaic_path)
+    #                 all_mosaics.append(info)
+    for pointing in tqdm(os.listdir(base_dir), desc="Processing mosaics") if verbose else os.listdir(base_dir):
+        mosaic_path = os.path.join(base_dir, pointing, "mosaic-blanked.fits")
+        if os.path.exists(mosaic_path):
+            info = get_mosaic_coverage(mosaic_path)
+            all_mosaics.append(info)
 
     df = pd.DataFrame(all_mosaics)
 
@@ -166,10 +172,10 @@ if __name__ == "__main__":
     save_path = args.save_path
     verbose = args.verbose
 
-    print_config_summary(BASE_DIR, FIELD_LIST, save_csv, save_path, verbose)
+    print_config_summary(DR3_BASE_DIR, FIELD_LIST, save_csv, save_path, verbose)
 
     main(
-        BASE_DIR,
+        DR3_BASE_DIR,
         FIELD_LIST,
         save_csv=save_csv,
         save_path=save_path,
