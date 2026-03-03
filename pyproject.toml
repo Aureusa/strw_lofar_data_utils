@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "strw-lofar-data-utils"
-version = "1.0.0"
+version = "1.1.0"
 description = "Utilities for LoTSS mosaics, cutout generation, and catalogue-driven workflows. This package is meant to be used as an internal tool on the Leiden Sterrenwacht Computer Cluster."
 readme = "README.md"
 requires-python = ">=3.9"

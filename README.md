@@ -47,7 +47,7 @@ python -m pip install .
 
 # Step 2: Set up environment variables
 
-You need to change the `PATH_TO_PACKAGE` variable to point to the location of this package on your system.
+You need to change the `PATH_TO_PACKAGE` variable in the `.env` file to point to the location of this package on your system.
 
 ```bash
 PATH_TO_PACKAGE="/path/to/package/strw_lofar_data_utils"
@@ -70,7 +70,7 @@ See the `examples/` directory for Jupyter notebooks demonstrating cutout generat
 
 ## 🛠️ Environment Configuration (for STRW users you can ignore this as the shipped files already contains the correct paths/settings for STRW use)
 
-The code uses `.env` values for cluster-specific paths/settings. You need to change the `PATH_TO_PACKAGE` variable to point to the location of this package on your system.
+The code uses `.env` values for cluster-specific paths/settings. You need to change the `PATH_TO_PACKAGE` variable in the `.env` file to point to the location of this package on your system.
 
 ```bash
 PATH_TO_PACKAGE="/path/to/package/strw_lofar_data_utils"
