@@ -184,13 +184,22 @@ class Vizualizer:
         fig = plt.figure(figsize=(10, 10))
         ax = fig.add_subplot(111, projection='aitoff')
         ax.set_title("Mosaic Coverage in RA/Dec")
-        ax.set_xlabel('RA (degrees)')
-        ax.set_ylabel('Dec (degrees)')
+        ax.set_xlabel('RA')
+        ax.set_ylabel('Dec')
+
+        xticks_deg = np.arange(-150, 181, 30)
+        ax.set_xticks(np.radians(xticks_deg))
+        ax.set_xticklabels([f"{int((180 - deg) % 360)}°" for deg in xticks_deg])
 
         for mosaic in mosaics:
-            ra_wrapped_deg = ((mosaic.ra + 180) % 360) - 180
-            ra_center_rad = np.radians(-ra_wrapped_deg)
-            dec_center_rad = np.radians(mosaic.dec)
+            ra_center_deg = mosaic.ra
+            dec_center_deg = mosaic.dec
+
+            # Keep original sky coordinates and transform only for Aitoff display,
+            # centered at RA=180° and with astronomy-style RA direction.
+            ra_center_shifted_deg = ((ra_center_deg - 180.0 + 360.0) % 360.0) - 180.0
+            ra_center_rad = np.radians(-ra_center_shifted_deg)
+            dec_center_rad = np.radians(dec_center_deg)
             ra_size_rad = np.radians(mosaic.ra_size)
 
             # Plot the center of the mosaic
