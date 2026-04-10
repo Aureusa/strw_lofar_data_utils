@@ -9,6 +9,7 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import numpy as np
+from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 from ..utils import pixel_2_arcmin_size, arcmin_2_pixel_size
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     from .mosaic import Mosaic
 
 
-dotenv.load_dotenv()
+dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env")
 PATH_TO_PACKAGE = os.getenv("PATH_TO_PACKAGE", "")
 DR2_BASE_DIR = os.getenv("DR2_BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
 DR3_BASE_DIR = os.getenv("DR3_BASE_DIR", "/disks/paradata/shimwell/Beyond-DR2/mosaics/LoTSS-DR3-mosaics/")

@@ -2,11 +2,12 @@ import os
 from astropy.io import fits
 import argparse
 import pandas as pd
+from pathlib import Path
 import yaml
 from tqdm import tqdm
 import dotenv
 
-dotenv.load_dotenv()
+dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env")
 
 # Get environment variables
 DR2_BASE_DIR = os.getenv("DR2_BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
