@@ -184,6 +184,25 @@ class CutoutCatalogue:
         """
         return self.constrained_catalogue
 
+    def count_sources(self):
+        constr_cat = self.get_constrained_catalogue()
+        if len(constr_cat) == 0:
+            return 0
+        
+        num_sources = constr_cat[self.source_col].nunique()
+
+        # MCS = multi-component source, i.e. a source with more than one component
+        num_mcs_sources = constr_cat.groupby(self.source_col).size().gt(1).sum()
+
+        # SCS = single-component source, i.e. a source with only one component
+        num_scs_sources = num_sources - num_mcs_sources
+
+        return {
+            "total_sources": num_sources,
+            "mcs_sources": num_mcs_sources,
+            "scs_sources": num_scs_sources,
+        }
+
     def _constrain_catalogue(
             self,
             catalogue: DataFrame,
