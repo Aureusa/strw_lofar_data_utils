@@ -1,6 +1,10 @@
-from cmath import rect
-
-from astropy.visualization import (AsinhStretch, ImageNormalize, PercentileInterval)
+from astropy.visualization import (
+    AsinhStretch,
+    ImageNormalize,
+    PercentileInterval,
+    BaseStretch,
+    BaseInterval
+)
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,6 +19,8 @@ class Vizualizer:
             cutout: Cutout,
             title: str,
             contour_levels: list = None,
+            interval: BaseInterval = PercentileInterval(99.5),
+            stretch: BaseStretch = AsinhStretch(),
             cmap='inferno',
             colorbar=False,
             rms=0.1,
@@ -24,8 +30,11 @@ class Vizualizer:
         """
         Show the cutout using matplotlib.
 
+        :param cutout: Cutout object to visualize
         :param title: Title for the plot
         :param contour_levels: List of contour levels in multiples of RMS noise (e.g., [3, 5, 10])
+        :param interval: Interval object for image normalization
+        :param stretch: Stretch object for image normalization
         :param cmap: Colormap for the image
         :param colorbar: Whether to show a colorbar
         :param rms: RMS noise level in mJy/beam
@@ -38,7 +47,7 @@ class Vizualizer:
 
         contour_levels = self._make_contour_levels(contour_levels, rms) if contour_levels is not None else None
 
-        norm = ImageNormalize(data, interval=PercentileInterval(99.5), stretch=AsinhStretch())
+        norm = self._get_norm(data, interval=interval, stretch=stretch)
         fig = plt.figure(figsize=(10, 10))
         ax = plt.subplot(projection=cutout_wcs)
         im = ax.imshow(data, cmap=cmap, origin='lower', norm=norm)
@@ -63,22 +72,36 @@ class Vizualizer:
             cutout_cat: CutoutCatalogue,
             title: str,
             contour_levels: list = [4, 6, 8, 10],
+            interval: BaseInterval = PercentileInterval(99.5),
+            stretch: BaseStretch = AsinhStretch(),
             cmap='gray',
             rms=0.1,
             save_path=None,
+            legend=True,
             save=False
         ) -> None:
+        """
+        Visualize a cutout with overlaid positions of objects from the cutout catalogue.
+        
+        :param cutout: Cutout object to visualize
+        :param cutout_cat: CutoutCatalogue object containing the catalog of objects in the cutout
+        :param title: Title for the plot
+        :param contour_levels: List of contour levels in multiples of RMS noise (e.g., [3, 5, 10])
+        :param interval: Interval object for image normalization
+        :param stretch: Stretch object for image normalization
+        :param cmap: Colormap for the image
+        :param rms: RMS noise level in mJy/beam (used to calculate contour levels if contour_levels is provided)
+        :param save_path: Path to save the plot image (if save is True)
+        :param legend: Whether to show a legend for the catalog objects
+        :param save: Whether to save the plot instead of showing it
+        """
         data_cutout = cutout.get_data()
 
         # Creates a dict of SourceBlob instances for each unique object in the cutout
         sb_dict = cutout_cat.get_source_blobs_from_catalogue()
 
         # For plotting purposes
-        norm = ImageNormalize(
-            data_cutout,
-            interval=PercentileInterval(99.5),
-            stretch=AsinhStretch()
-        )
+        norm = self._get_norm(data_cutout, interval=interval, stretch=stretch)
         if contour_levels is not None:
             contours = self._make_contour_levels(contour_levels, rms=rms)
         else:
@@ -120,7 +143,8 @@ class Vizualizer:
                     fontsize=24,
                 )
 
-        ax.legend()
+        if legend:
+            ax.legend(loc='upper right', fontsize='small')
         ax.set_title("Cutout with Catalog Objects Overlay")
         if save:
             if save_path is None:
@@ -131,6 +155,11 @@ class Vizualizer:
         plt.close()
 
     def vizualize_a_crawl(self, crawler: BaseMosaicCrawler) -> None:
+        """
+        Visualize the crawl process by plotting the positions of the generated cutouts on the mosaic.
+        
+        :param crawler: BaseMosaicCrawler object containing the crawl information
+        """
         if not crawler.has_crawled():
             raise ValueError("The crawler has not completed crawling yet. Please call the 'crawl' method before visualizing.")
         mosaic_radius = crawler.mosaic_shape[0] / 2
@@ -223,3 +252,15 @@ class Vizualizer:
         :return: List of contour levels in Jy/beam
         """
         return np.array(levels) * rms * 1e-3  # Convert mJy/beam to Jy/beam
+
+    def _get_norm(self, data: np.ndarray, interval: BaseInterval, stretch: BaseStretch) -> ImageNormalize:
+        """
+        Get an ImageNormalize object for the given data using an interval and stretch.
+        
+        :param data: 2D numpy array of the image data
+        :param interval: Interval object for image normalization
+        :param stretch: Stretch object for image normalization
+        :return: ImageNormalize object for normalizing the image display
+        """
+        return ImageNormalize(data, interval=interval, stretch=stretch)
+    
