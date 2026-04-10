@@ -8,6 +8,7 @@ import astropy.units as u
 import numpy as np
 
 from .utils import find_field_path
+from ...io.fits import read_fits_header, read_fits_data, read_fits_data_shape
 
 
 class Mosaic:
@@ -68,7 +69,7 @@ class Mosaic:
         Get the WCS object for the mosaic.
         """
         if self._header is None:
-            self.load_header()
+            raise ValueError("Header not loaded. Call load_header() to load it first.")
         return WCS(self._header)
 
     @property
@@ -77,7 +78,7 @@ class Mosaic:
         Get the FITS header for the mosaic.
         """
         if self._header is None:
-            self.load_header()
+            raise ValueError("Header not loaded. Call load_header() to load it first.")
         return self._header
     
     @property
@@ -87,7 +88,7 @@ class Mosaic:
         Must call load_data() first.
         """
         if self._data is None:
-            print("Data not loaded. Call load_data() to load it first.")
+            raise ValueError("Data not loaded. Call load_data() to load it first.")
         return self._data
     
     def find_seperation_from_center(self, ra: float, dec: float) -> float:
@@ -130,47 +131,50 @@ class Mosaic:
         ra_array, dec_array = wcs.wcs_pix2world(x_array, y_array, 0)
         return list(zip(ra_array.tolist(), dec_array.tolist()))
     
-    def load_header(self):
+    def load_header(self, hdul_idx: int = 0):
         """
         Load the FITS header for the mosaic.
 
+        :param hdul_idx: Index of the HDU to load the header from (default is 0 for the primary HDU)
         :return: FITS header
         """
         if self._header is None:
             fits_path = self._mosaic_blanked_path
-            with fits.open(fits_path) as hdul:
-                self._header = hdul[0].header
+            self._header = read_fits_header(fits_path, idx=hdul_idx)
         return self._header
     
-    def load_data(self):
+    def load_data(self, hdul_idx: int = 0):
         """
         Load the FITS data for the mosaic.
 
+        :param hdul_idx: Index of the HDU to load the data from (default is 0 for the primary HDU)
         :return: FITS data
         """
         if self._data is None:
             fits_path = self._mosaic_blanked_path
-            with fits.open(fits_path) as hdul:
-                self._data = hdul[0].data
+            self._data = read_fits_data(fits_path, idx=hdul_idx)
         return self._data
 
-    def get_data_shape(self):
+    def get_data_shape(self, hdul_idx: int = 0) -> tuple:
         """
         Get the shape of the FITS data for the mosaic without loading the entire data into memory.
     
+        :param hdul_idx: Index of the HDU to get the data shape from (default is 0 for the primary HDU)
         :return: Shape of the FITS data
         """
         if self._data is not None:
             return self._data.shape
         
         fits_path = self._mosaic_blanked_path
-        with fits.open(fits_path) as hdul:
-            data_shape = hdul[0].data.shape
+        data_shape = read_fits_data_shape(fits_path, idx=hdul_idx)
         return data_shape
     
     def offload_data(self):
         """
         Offload the FITS data from memory.
+        
+        [CAUTION]: Be careful when calling this method in a multi-threaded environment,
+        as it will affect all threads sharing the same Mosaic instance.
         """
         self._data = None
         self._header = None
@@ -200,3 +204,4 @@ class Mosaic:
         :return: SkyCoord of the mosaic center
         """
         return SkyCoord(ra=self.ra * u.deg, dec=self.dec * u.deg)
+    

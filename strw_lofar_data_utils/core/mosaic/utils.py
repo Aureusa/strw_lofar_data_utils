@@ -4,7 +4,6 @@ import dotenv
 import gc
 from typing import TYPE_CHECKING
 
-from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u

@@ -5,6 +5,7 @@ from astropy.io import fits
 from astropy.nddata import Cutout2D
 import os
 import numpy as np
+from importlib.metadata import PackageNotFoundError, version
 
 import gc
 
@@ -32,6 +33,7 @@ class Cutout:
         self.ra = float(ra)
         self.dec = float(dec)
 
+        self.mosaic.load_header()
         self.size_arcmin = size_arcmin if size_arcmin is not None else self._calculate_size_arcmin(size_pixels)
         self.size_pixels = size_pixels if size_pixels is not None else self._calculate_size_pixels(size_arcmin)
 
@@ -100,6 +102,7 @@ class Cutout:
 
         # Create new header for cutout
         cutout_header = cutout.wcs.to_header()
+        self._add_recreation_metadata(cutout_header)
 
         filename = self._generate_filename() if filename is None else filename
 
@@ -112,6 +115,100 @@ class Cutout:
         # Save to FITS
         hdu = fits.PrimaryHDU(data=cutout.data, header=cutout_header)
         hdu.writeto(output_path, overwrite=True)
+        return output_path
+
+    @classmethod
+    def from_saved_fits(cls, fits_path: str) -> "Cutout":
+        """
+        Recreate a Cutout object from a FITS file saved by this library.
+
+        :param fits_path: Path to the saved cutout FITS file
+        :return: Recreated Cutout object
+        """
+        header = fits.getheader(fits_path)
+
+        writer = header.get("HIERARCH STRW WRITER")
+        if writer != "strw_lofar_data_utils":
+            raise ValueError(
+                "FITS file does not contain strw_lofar_data_utils recreation metadata. "
+                "Expected 'HIERARCH STRW WRITER = strw_lofar_data_utils'."
+            )
+
+        required_keys = [
+            "HIERARCH STRW CUTOUT RA",
+            "HIERARCH STRW CUTOUT DEC",
+            "HIERARCH STRW CUTOUT SIZEPIX",
+            "HIERARCH STRW MOSAIC FIELD",
+            "HIERARCH STRW MOSAIC RA",
+            "HIERARCH STRW MOSAIC DEC",
+            "HIERARCH STRW MOSAIC RAMIN",
+            "HIERARCH STRW MOSAIC RAMAX",
+            "HIERARCH STRW MOSAIC DECMIN",
+            "HIERARCH STRW MOSAIC DECMAX",
+            "HIERARCH STRW MOSAIC RASIZE",
+            "HIERARCH STRW MOSAIC DECSIZE",
+            "HIERARCH STRW MOSAIC RELEASE",
+        ]
+        missing_keys = [key for key in required_keys if key not in header]
+        if missing_keys:
+            raise ValueError(
+                "FITS file is missing required recreation metadata keys: "
+                f"{', '.join(missing_keys)}"
+            )
+
+        mosaic = Mosaic(
+            field_name=str(header["HIERARCH STRW MOSAIC FIELD"]),
+            ra=float(header["HIERARCH STRW MOSAIC RA"]),
+            dec=float(header["HIERARCH STRW MOSAIC DEC"]),
+            ra_min=float(header["HIERARCH STRW MOSAIC RAMIN"]),
+            ra_max=float(header["HIERARCH STRW MOSAIC RAMAX"]),
+            dec_min=float(header["HIERARCH STRW MOSAIC DECMIN"]),
+            dec_max=float(header["HIERARCH STRW MOSAIC DECMAX"]),
+            ra_size=float(header["HIERARCH STRW MOSAIC RASIZE"]),
+            dec_size=float(header["HIERARCH STRW MOSAIC DECSIZE"]),
+            release=str(header["HIERARCH STRW MOSAIC RELEASE"]),
+        )
+
+        return cls(
+            mosaic=mosaic,
+            ra=float(header["HIERARCH STRW CUTOUT RA"]),
+            dec=float(header["HIERARCH STRW CUTOUT DEC"]),
+            size_pixels=int(header["HIERARCH STRW CUTOUT SIZEPIX"]),
+        )
+
+    def _add_recreation_metadata(self, header: fits.Header) -> None:
+        """
+        Add metadata needed to reconstruct this Cutout object.
+        """
+        header["HIERARCH STRW WRITER"] = "strw_lofar_data_utils"
+        header["HIERARCH STRW VERSION"] = self._get_library_version()
+        header["HIERARCH STRW CLASS"] = "Cutout"
+
+        header["HIERARCH STRW CUTOUT RA"] = self.ra
+        header["HIERARCH STRW CUTOUT DEC"] = self.dec
+        header["HIERARCH STRW CUTOUT SIZEPIX"] = int(self.size_pixels)
+        header["HIERARCH STRW CUTOUT SIZEAM"] = float(self.size_arcmin)
+
+        header["HIERARCH STRW MOSAIC FIELD"] = self.mosaic.field_name
+        header["HIERARCH STRW MOSAIC RELEASE"] = self.mosaic.release
+        header["HIERARCH STRW MOSAIC RA"] = float(self.mosaic.ra)
+        header["HIERARCH STRW MOSAIC DEC"] = float(self.mosaic.dec)
+        header["HIERARCH STRW MOSAIC RAMIN"] = float(self.mosaic.ra_min)
+        header["HIERARCH STRW MOSAIC RAMAX"] = float(self.mosaic.ra_max)
+        header["HIERARCH STRW MOSAIC DECMIN"] = float(self.mosaic.dec_min)
+        header["HIERARCH STRW MOSAIC DECMAX"] = float(self.mosaic.dec_max)
+        header["HIERARCH STRW MOSAIC RASIZE"] = float(self.mosaic.ra_size)
+        header["HIERARCH STRW MOSAIC DECSIZE"] = float(self.mosaic.dec_size)
+
+    @staticmethod
+    def _get_library_version() -> str:
+        """
+        Best-effort package version lookup for provenance in FITS headers.
+        """
+        try:
+            return version("strw-lofar-data-utils")
+        except PackageNotFoundError:
+            return "unknown"
 
     def offload_data(self) -> None:
         """
@@ -131,8 +228,11 @@ class Cutout:
             return self._cutout
         
         # Load mosaic data and header
-        wcs = self.mosaic.wcs
+        self.mosaic.load_header()
         data = self.mosaic.load_data()
+
+        # Get mosaic WCS
+        wcs = self.mosaic.wcs
 
         # Create cutout
         position = SkyCoord(ra=self.ra*u.deg, dec=self.dec*u.deg, frame='icrs')
