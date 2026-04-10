@@ -124,6 +124,7 @@ class Mosaic:
         :type y_pixel: list of floats
         :return: List of tuples of (RA, Dec) in degrees
         """
+        self.load_header()  # Ensure header is loaded to get WCS information
         wcs = WCS(self.header)
 
         x_array = np.asarray(x_pixel, dtype=np.float64)

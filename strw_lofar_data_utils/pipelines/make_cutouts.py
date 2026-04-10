@@ -6,6 +6,9 @@ from ..core.cutout_maker import make_cutout, find_candidate_mosaics, chose_from_
 from ..core.mosaic import get_list_of_mosaics
 
 
+from ..logger import setup_logging
+
+
 def _process_single_cutout(ra_dec, mosaics, size_arcmin, size_pixels, data_folder, save):
     """Helper function to process a single cutout (for parallel execution)."""
     ra, dec = ra_dec
@@ -59,6 +62,8 @@ def generate_cutouts(
     :param n_workers: Number of parallel workers (None = use all CPUs)
     :return: List of Cutout objects
     """
+    logger = setup_logging(name="strw_lofar_data_utils.pipelines.make_cutouts.generate_cutouts")
+
     cutouts = []
     mosaics = get_list_of_mosaics(mosaic_coverage_file, release=release)
     
@@ -80,7 +85,7 @@ def generate_cutouts(
             cutout, error = future.result()
             if error:
                 if verbose:
-                    print(error)
+                    logger.warning(error)
             elif cutout is not None:
                 cutouts.append(cutout)
     

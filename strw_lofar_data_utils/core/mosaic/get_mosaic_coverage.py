@@ -6,6 +6,9 @@ from pathlib import Path
 import yaml
 from tqdm import tqdm
 import dotenv
+from logging import Logger
+
+from ...logger import setup_logging
 
 dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env")
 
@@ -28,24 +31,26 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
     
 
-def print_config_summary(
-        base_dir: str, field_list: list, save_csv: bool, save_path: str, verbose: bool
+def log_config_summary(
+        base_dir: str, field_list: list, save_csv: bool, save_path: str, logger: Logger = None, verbose: bool = True
     ) -> None:
     """
-    Print a summary of the configuration settings.
+    Log a summary of the configuration settings.
 
     :param config: Configuration dictionary
     :param save_csv: Whether to save the output DataFrame to a CSV file
     :param save_path: Path to save the CSV file
-    :param verbose: Whether to print verbose output
+    :param verbose: Whether to Log verbose output
     """
-    print("Configuration Summary:")
-    print(f"Base Directory: {base_dir}")
-    print(f"Fields: {field_list}")
-    print(f"Save CSV: {save_csv}")
-    print(f"CSV Save Path: {save_path}")
-    print(f"Verbose: {verbose}")
-    
+    if logger is None:
+        logger = setup_logging(name="strw_lofar_data_utils.core.mosaic.get_mosaic_coverage")
+    info = "Configuration Summary:"
+    info += f"\nBase Directory: {base_dir}"
+    info += f"\nFields: {field_list}"
+    info += f"\nSave CSV: {save_csv}"
+    info += f"\nCSV Save Path: {save_path}"
+    info += f"\nVerbose: {verbose}"
+    logger.info(info)
 
 def get_mosaic_coverage(fits_path: str) -> dict:
     """
@@ -92,6 +97,7 @@ def main(
         field_list: list,
         save_csv: bool = True,
         save_path: str = 'lotss_dr2_mosaic_coverage.csv',
+        logger=None,
         verbose: bool = True
     ) -> None:
     """
@@ -99,7 +105,7 @@ def main(
     1. Iterate over specified fields and pointings.
     2. Extract coverage info from each mosaic FITS file.
     3. Compile results into a DataFrame and save as CSV if required.
-    4. Print verbose output if enabled.
+    4. Log verbose output if enabled.
     
     :param base_dir: Base directory containing LOFAR DR2 mosaics. This
     should be set in the configuration YAML file. The default value is
@@ -112,18 +118,10 @@ def main(
     Default is True.
     :param save_path: Path to save the CSV file. Default is
     'lotss_dr2_mosaic_coverage.csv'.
-    :param verbose: Whether to print verbose output. Default is True.
+    :param verbose: Whether to log verbose output. Default is True.
     """
     # Collect all mosaic info
     all_mosaics = []
-    # for ra_field in field_list:
-    #     field_dir = os.path.join(base_dir, ra_field)
-    #     if os.path.exists(field_dir):
-    #         for pointing in tqdm(os.listdir(field_dir), desc=f"Processing {ra_field}") if verbose else os.listdir(field_dir):
-    #             mosaic_path = os.path.join(field_dir, pointing, "mosaic-blanked.fits")
-    #             if os.path.exists(mosaic_path):
-    #                 info = get_mosaic_coverage(mosaic_path)
-    #                 all_mosaics.append(info)
     for pointing in tqdm(os.listdir(base_dir), desc="Processing mosaics") if verbose else os.listdir(base_dir):
         mosaic_path = os.path.join(base_dir, pointing, "mosaic-blanked.fits")
         if os.path.exists(mosaic_path):
@@ -133,13 +131,15 @@ def main(
     df = pd.DataFrame(all_mosaics)
 
     if verbose:
-        print(df.head())
+        logger.info(df.head())
 
     if save_csv:
         df.to_csv(save_path, index=False)
-        print(f"\nSaved {len(df)} mosaics to {save_path}")
+        logger.info(f"Saved {len(df)} mosaics to {save_path}")
 
 if __name__ == "__main__":
+    logger = setup_logging(name="strw_lofar_data_utils.core.mosaic.get_mosaic_coverage")
+
     parser = argparse.ArgumentParser(
         description="LOFAR Mosaic Coverage Extraction"
     )
@@ -173,13 +173,14 @@ if __name__ == "__main__":
     save_path = args.save_path
     verbose = args.verbose
 
-    print_config_summary(DR3_BASE_DIR, FIELD_LIST, save_csv, save_path, verbose)
+    log_config_summary(DR3_BASE_DIR, FIELD_LIST, save_csv, save_path, logger, verbose)
 
     main(
         DR3_BASE_DIR,
         FIELD_LIST,
         save_csv=save_csv,
         save_path=save_path,
+        logger=logger,
         verbose=verbose
     )
     

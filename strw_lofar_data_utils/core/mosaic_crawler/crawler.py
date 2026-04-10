@@ -4,7 +4,7 @@ from tqdm import tqdm
 from .base_crawler import BaseMosaicCrawler
 from ..mosaic import get_mosaic_by_field_name
 from ..cutout_maker import make_cutout, Cutout
-
+from ...logger import setup_logging
 
 class Crawler(BaseMosaicCrawler):
     def __init__(
@@ -57,6 +57,7 @@ class Crawler(BaseMosaicCrawler):
         self.verbose = verbose
 
         if verbose:
+            self.logger = setup_logging(name="strw_lofar_data_utils.core.mosaic_crawler.crawler.Crawler")
             self._log_info()
 
     def crawl(self) -> list[Cutout]:
@@ -79,7 +80,7 @@ class Crawler(BaseMosaicCrawler):
                 new_x_list.append(self._x_list[idx])
                 new_y_list.append(self._y_list[idx])
         if self.verbose:
-            print(f"Generated {len(cutouts)} cutouts out of {len(self.ra_dec_list)} possible positions.")
+            self.logger.info(f"Generated {len(cutouts)} cutouts out of {len(self.ra_dec_list)} possible positions.")
 
         self.ra_dec_list = new_ra_dec_list
         self._x_list = new_x_list
@@ -97,12 +98,12 @@ class Crawler(BaseMosaicCrawler):
         return hasattr(self, '_has_crawled') and self._has_crawled
 
     def _log_info(self):
-        print(f"Mosaic field name: {self.mosaic.field_name}")
-        print(f"Cutout size (pixels): {self._cutout_size}")
-        print(f"Stride: {self.stride}")
-        print(f"Total cutouts that can be generated assuming square mosaic ({self._mosaic_shape}): {self.total_cutouts}")
-        print(f"Warning: This is an upper limit on the number of cutouts that can be generated.")
-        print("The actual number will be lower due to edge effects and the shape of the mosaic coverage (circle).")
+        self.logger.info(f"Mosaic field name: {self.mosaic.field_name}")
+        self.logger.info(f"Cutout size (pixels): {self._cutout_size}")
+        self.logger.info(f"Stride: {self.stride}")
+        self.logger.info(f"Total cutouts that can be generated assuming square mosaic ({self._mosaic_shape}): {self.total_cutouts}")
+        self.logger.info(f"Warning: This is an upper limit on the number of cutouts that can be generated.")
+        self.logger.info("The actual number will be lower due to edge effects and the shape of the mosaic coverage (circle).")
 
     def _generate_ra_dec_list(self, num_cutouts_x, num_cutouts_y, cutout_size, stride):
         # Generate indices using numpy for vectorized operation
