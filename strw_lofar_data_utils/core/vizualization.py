@@ -17,7 +17,7 @@ class Vizualizer:
     def vizualize_a_cutout(
             self,
             cutout: Cutout,
-            title: str,
+            title: str = "Stokes I Cutout",
             contour_levels: list = None,
             interval: BaseInterval = PercentileInterval(99.5),
             stretch: BaseStretch = AsinhStretch(),
@@ -25,7 +25,11 @@ class Vizualizer:
             colorbar=False,
             rms=0.1,
             save_path=None,
-            save=False
+            save=False,
+            fig=None,
+            ax=None,
+            set_axislabel_x: str = 'RA (J2000)',
+            set_axislabel_y: str = 'Dec (J2000)'
         ) -> None:
         """
         Show the cutout using matplotlib.
@@ -41,6 +45,8 @@ class Vizualizer:
         (used to calculate contour levels if contour_levels is provided)
         :param save_path: Path to save the plot image (if save is True)
         :param save: Whether to save the plot instead of showing it
+        :param fig: Matplotlib figure object (optional)
+        :param ax: Matplotlib axis object (optional)
         """
         cutout_wcs = cutout.get_wcs()
         data = cutout.get_data()
@@ -48,16 +54,35 @@ class Vizualizer:
         contour_levels = self._make_contour_levels(contour_levels, rms) if contour_levels is not None else None
 
         norm = self._get_norm(data, interval=interval, stretch=stretch)
-        fig = plt.figure(figsize=(10, 10))
-        ax = plt.subplot(projection=cutout_wcs)
+
+        # Set up the figure and axis if not provided
+        external_fig = fig is not None and ax is not None
+        if fig is None:
+            fig = plt.figure(figsize=(10, 10))
+        if ax is None:
+            ax = fig.add_subplot(111, projection=cutout_wcs)
+        elif ax.name == 'rectilinear':
+            subplotspec = ax.get_subplotspec()
+            ax.remove()
+            ax = fig.add_subplot(subplotspec, projection=cutout_wcs)
+
         im = ax.imshow(data, cmap=cmap, origin='lower', norm=norm)
         if colorbar:
             plt.colorbar(im, ax=ax, label='Intensity')
         if contour_levels is not None:
             ax.contour(data, levels=contour_levels, colors='white', linewidths=0.5)
         ax.set_title(title)
-        ax.set_xlabel('RA (J2000)')
-        ax.set_ylabel('Dec (J2000)')
+        if set_axislabel_x is not None and set_axislabel_y is not None:
+            ax.coords[0].set_axislabel(set_axislabel_x)
+            ax.coords[1].set_axislabel(set_axislabel_y)
+        else:
+            # If axis labels are not provided, hide them completely
+            ax.coords[0].set_axislabel('')
+            ax.coords[1].set_axislabel('')
+            ax.coords[0].axislabels.set_visible(False)
+            ax.coords[1].axislabels.set_visible(False)
+        if external_fig:
+            return
         if save:
             if save_path is None:
                 save_path = f"{title.replace(' ', '_')}_cutout.png"
@@ -70,7 +95,7 @@ class Vizualizer:
             self,
             cutout: Cutout,
             cutout_cat: CutoutCatalogue,
-            title: str,
+            title: str = "Stokes I Cutout with Catalogue Objects",
             contour_levels: list = [4, 6, 8, 10],
             interval: BaseInterval = PercentileInterval(99.5),
             stretch: BaseStretch = AsinhStretch(),
@@ -78,7 +103,11 @@ class Vizualizer:
             rms=0.1,
             save_path=None,
             legend=True,
-            save=False
+            save=False,
+            fig=None,
+            ax=None,
+            set_axislabel_x: str = 'RA (J2000)',
+            set_axislabel_y: str = 'Dec (J2000)'
         ) -> None:
         """
         Visualize a cutout with overlaid positions of objects from the cutout catalogue.
@@ -94,6 +123,8 @@ class Vizualizer:
         :param save_path: Path to save the plot image (if save is True)
         :param legend: Whether to show a legend for the catalog objects
         :param save: Whether to save the plot instead of showing it
+        :param fig: Matplotlib figure object (optional)
+        :param ax: Matplotlib axis object (optional)
         """
         data_cutout = cutout.get_data()
 
@@ -108,7 +139,14 @@ class Vizualizer:
             contours = None
 
         # Show the cutout
-        _, ax = plt.subplots(figsize=(10, 10))
+        external_fig = fig is not None and ax is not None
+        if not external_fig:
+            fig, ax = plt.subplots(figsize=(10, 10))
+        elif ax.name == 'rectilinear':
+            subplotspec = ax.get_subplotspec()
+            ax.remove()
+            ax = fig.add_subplot(subplotspec, projection=cutout.get_wcs())
+
         ax.imshow(data_cutout, origin='lower', cmap=cmap, norm=norm)
         ax.contour(
             data_cutout,
@@ -145,7 +183,13 @@ class Vizualizer:
 
         if legend:
             ax.legend(loc='upper right', fontsize='small')
-        ax.set_title("Cutout with Catalog Objects Overlay")
+        ax.set_title(title)
+        if set_axislabel_x is not None and set_axislabel_y is not None:
+            ax.coords[0].set_axislabel('RA (J2000)')
+            ax.coords[1].set_axislabel('Dec (J2000)')
+
+        if external_fig:
+            return
         if save:
             if save_path is None:
                 save_path = f"{title.replace(' ', '_')}_cutout_with_catalogue.png"
