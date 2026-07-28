@@ -11,14 +11,16 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
-from ..utils import pixel_2_arcmin_size, arcmin_2_pixel_size
+from ..utils import pixel_2_arcmin_size, arcmin_2_pixel_size, find_repo_root
 
 if TYPE_CHECKING:
     from .mosaic import Mosaic
 
 
-dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env")
-PATH_TO_PACKAGE = os.getenv("PATH_TO_PACKAGE", "")
+REPO_ROOT = find_repo_root()
+if REPO_ROOT is not None:
+    dotenv.load_dotenv(dotenv_path=REPO_ROOT / ".env")
+
 DR2_BASE_DIR = os.getenv("DR2_BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
 DR3_BASE_DIR = os.getenv("DR3_BASE_DIR", "/disks/paradata/shimwell/Beyond-DR2/mosaics/LoTSS-DR3-mosaics/")
 RA0h_field = os.getenv("RA0h_field", "RA0h_field")
@@ -144,16 +146,23 @@ def _get_mosaic_coverage_filepath(mosaic_coverage_file: str = 'default', release
         else:
             raise ValueError(
                 f"Unsupported release: {release}, expected 'DR2' or 'DR3'.")
-        mosaic_coverage_file = os.path.join(
-            PATH_TO_PACKAGE,
-            'data',
-            'mosaic_coverage',
-            coverage_file
-        )
+
+        if REPO_ROOT is None:
+            raise FileNotFoundError(
+                "Could not locate the strw_lofar_data_utils repository root. "
+                "Run from a cloned repository checkout or pass mosaic_coverage_file explicitly."
+            )
+
+        mosaic_coverage_file = REPO_ROOT / 'data' / 'mosaic_coverage' / coverage_file
+
+        if not mosaic_coverage_file.exists():
+            raise FileNotFoundError(
+                f"Default mosaic coverage file not found: {mosaic_coverage_file}"
+            )
     else:
         print(f"Using custom mosaic coverage file: {mosaic_coverage_file}.")
     
-    return mosaic_coverage_file
+    return str(mosaic_coverage_file)
 
 
 def find_empty_regions(

@@ -42,16 +42,17 @@ With editable install, code changes are picked up immediately (no reinstall need
 ### Option 2: standard local install
 
 ```bash
-python -m pip install .
+git clone https://github.com/Aureusa/strw_lofar_data_utils.git
+cd strw_lofar_data_utils
+
+python -m venv .venv
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+python -m pip install .  # Non editable install
 ```
 
-# Step 2: Set up environment variables
-
-You need to change the `PATH_TO_PACKAGE` variable in the `.env` file to point to the location of this package on your system.
-
-```bash
-PATH_TO_PACKAGE="/path/to/package/strw_lofar_data_utils"
-```
+With non-editable install, you need to reinstall the package after making changes to the code for them to take effect.
 
 # You are good to go! See the `examples/` directory for Jupyter notebooks demonstrating cutout generation, catalog integration, and visualization.
 
@@ -68,15 +69,15 @@ from strw_lofar_data_utils.core.cutout_maker.cutout_catalogue import CutoutCatal
 ## 🚀 Usage
 See the `examples/` directory for Jupyter notebooks demonstrating cutout generation, catalog integration, and visualization. All the main utilities in this package have been showcased in the notebooks with example code snippets and explanations.
 
-## 🛠️ Environment Configuration (for STRW users you can ignore this as the shipped files already contains the correct paths/settings for STRW use)
+## 🛠️ Environment Configuration
 
-The code uses `.env` values for cluster-specific paths/settings. You need to change the `PATH_TO_PACKAGE` variable in the `.env` file to point to the location of this package on your system.
+The code uses `.env` values only for cluster-specific paths/settings such as the LoTSS mosaic base directories. The repository root is detected automatically from the cloned checkout.
 
-```bash
-PATH_TO_PACKAGE="/path/to/package/strw_lofar_data_utils"
-```
+For STRW users, the shipped `.env` should already contain the correct values.
 
-If you run outside STRW, set `BASE_DIR` and related values to your local data layout. `Highly discuraged to run outside STRW` as the code assumptions are highly coupled to the speicific STRW environment. This might be resolved in the future by adding more configuration options and decoupling from STRW-specific paths but for now this package is developed `exclusively for STRW use`.
+If you run outside STRW, update `DR2_BASE_DIR`, `DR3_BASE_DIR`, and related values in `.env` to match your local data layout. Running outside STRW is still discouraged because the codebase is tightly coupled to the STRW environment.
+
+Because the default coverage files still live in the repository-level `data/` directory, the package currently expects you to work from a cloned checkout of this repository.
 
 ## 🗺️ First-Time Coverage File Generation (Not needed for STRW users as this is already done and the file is shipped with the package)
 

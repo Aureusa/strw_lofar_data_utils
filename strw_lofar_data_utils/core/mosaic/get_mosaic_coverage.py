@@ -9,8 +9,11 @@ import dotenv
 from logging import Logger
 
 from ...logger import setup_logging
+from ..utils import find_repo_root
 
-dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env")
+REPO_ROOT = find_repo_root()
+if REPO_ROOT is not None:
+    dotenv.load_dotenv(dotenv_path=REPO_ROOT / ".env")
 
 # Get environment variables
 DR2_BASE_DIR = os.getenv("DR2_BASE_DIR", "/disks/paradata/shimwell/LoTSS-DR2/mosaics")
